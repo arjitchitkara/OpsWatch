@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-opswatch}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opswatch}
+      POSTGRES_DB: ${POSTGRES_DB:-opswatch}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opswatch} -d ${POSTGRES_DB:-opswatch}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  pgbouncer:
+    image: edoburu/pgbouncer:1.24.1-p1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./config/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./config/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-p", "6432", "-U", "opswatch", "-d", "opswatch"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    environment:
+      APP_VERSION: ${APP_VERSION:-0.1.0}
+      GIT_SHA: ${GIT_SHA:-local}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-for-local-dev}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://opswatch:opswatch@pgbouncer:6432/opswatch}
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:-postgresql+psycopg://opswatch:opswatch@postgres:5432/opswatch}
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    command: sh -c "alembic upgrade head && uvicorn opswatch.api.main:app --host 0.0.0.0 --port 8000"
+
+  worker:
+    build: .
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://opswatch:opswatch@pgbouncer:6432/opswatch}
+      WORKER_POLL_SECONDS: ${WORKER_POLL_SECONDS:-5}
+    depends_on:
+      api:
+        condition: service_started
+    command: python -m opswatch.worker.main
+
+  failure-lab:
+    build: .
+    command: uvicorn opswatch.failure_lab.main:app --host 0.0.0.0 --port 9000
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      api:
+        condition: service_started
+      failure-lab:
+        condition: service_started
+    ports:
+      - "80:80"
+    volumes:
+      - ./config/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  postgres_data:

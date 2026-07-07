@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - OpsWatch</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main class="login-box card">
+      <h1>OpsWatch</h1>
+      <p class="muted">Local MVP admin login. Default credentials are admin/admin.</p>
+      {% if error %}<p class="danger">{{ error }}</p>{% endif %}
+      <form class="stack" action="/login" method="post">
+        <label>Username <input name="username" value="admin" required></label>
+        <label>Password <input name="password" type="password" required></label>
+        <button type="submit">Login</button>
+      </form>
+    </main>
+  </body>
+</html>

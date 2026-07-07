@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}OpsWatch{% endblock %}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">OpsWatch</div>
+      <nav class="nav">
+        <a href="/">Overview</a>
+        <a href="/targets">Targets</a>
+        <a href="/incidents">Incidents</a>
+        <form action="/logout" method="post">
+          <button class="secondary" type="submit">Logout</button>
+        </form>
+      </nav>
+    </header>
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

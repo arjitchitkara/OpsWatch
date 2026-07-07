@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Incident {{ incident.id }} - OpsWatch{% endblock %}
+{% block content %}
+<h1>{{ incident.title }}</h1>
+<section class="panel">
+  <p><strong>Target:</strong> <a href="/targets/{{ incident.target.id }}">{{ incident.target.name }}</a></p>
+  <p><strong>Started:</strong> {{ incident.started_at }}</p>
+  <p><strong>Resolved:</strong> {{ incident.resolved_at or "-" }}</p>
+  <p><strong>Reason:</strong> {{ incident.failure_reason or "-" }}</p>
+</section>
+
+<section class="panel">
+  <h2>Edit Incident</h2>
+  <form class="stack" action="/incidents/{{ incident.id }}" method="post">
+    <div class="form-grid">
+      <label>Status
+        <select name="status_value">
+          {% for value in ["open", "acknowledged", "resolved"] %}
+          <option value="{{ value }}" {% if incident.status == value %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Severity
+        <select name="severity">
+          {% for value in ["info", "warning", "critical"] %}
+          <option value="{{ value }}" {% if incident.severity == value %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <label>Notes <textarea name="notes" rows="6">{{ incident.notes or "" }}</textarea></label>
+    <button type="submit">Save Incident</button>
+  </form>
+</section>
+{% endblock %}

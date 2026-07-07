@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Incidents - OpsWatch{% endblock %}
+{% block content %}
+<h1>Incidents</h1>
+<section class="panel">
+  {% if incidents %}
+  <table>
+    <thead><tr><th>Title</th><th>Target</th><th>Severity</th><th>Status</th><th>Started</th><th>Resolved</th></tr></thead>
+    <tbody>
+      {% for incident in incidents %}
+      <tr>
+        <td><a href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
+        <td>{{ incident.target.name }}</td>
+        <td><span class="badge warn">{{ incident.severity }}</span></td>
+        <td>{{ incident.status }}</td>
+        <td>{{ incident.started_at }}</td>
+        <td>{{ incident.resolved_at or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No incidents recorded.</p>
+  {% endif %}
+</section>
+{% endblock %}

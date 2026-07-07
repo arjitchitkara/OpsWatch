@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ target.name }} - OpsWatch{% endblock %}
+{% block content %}
+<h1>{{ target.name }}</h1>
+<section class="panel">
+  <p><strong>URL:</strong> {{ target.url }}</p>
+  <p><strong>Expected:</strong> {{ target.method }} {{ target.expected_status }}</p>
+  <p><strong>Interval:</strong> {{ target.interval_seconds }}s, threshold {{ target.failure_threshold }}</p>
+  <div class="actions">
+    <form action="/targets/{{ target.id }}/check" method="post">
+      <button type="submit">Run Manual Check</button>
+    </form>
+    <a class="button" href="/api/v1/targets/{{ target.id }}/checks">Checks JSON</a>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Recent Checks</h2>
+  {% if checks %}
+  <table>
+    <thead><tr><th>Result</th><th>Status</th><th>Latency</th><th>Error</th><th>Message</th><th>Checked</th></tr></thead>
+    <tbody>
+      {% for check in checks %}
+      <tr>
+        <td>{% if check.success %}<span class="badge ok">success</span>{% else %}<span class="badge bad">failed</span>{% endif %}</td>
+        <td>{{ check.status_code or "-" }}</td>
+        <td>{{ check.response_time_ms or "-" }} ms</td>
+        <td>{{ check.error_type or "-" }}</td>
+        <td>{{ check.error_message or "-" }}</td>
+        <td>{{ check.checked_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No checks recorded.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Incidents</h2>
+  {% if incidents %}
+  <table>
+    <thead><tr><th>Title</th><th>Status</th><th>Started</th><th>Resolved</th></tr></thead>
+    <tbody>
+      {% for incident in incidents %}
+      <tr>
+        <td><a href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
+        <td>{{ incident.status }}</td>
+        <td>{{ incident.started_at }}</td>
+        <td>{{ incident.resolved_at or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No incidents for this target.</p>
+  {% endif %}
+</section>
+{% endblock %}

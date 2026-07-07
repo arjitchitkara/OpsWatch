@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Overview - OpsWatch{% endblock %}
+{% block content %}
+<h1>Overview</h1>
+<section class="grid">
+  <div class="card">
+    <div class="muted">Targets</div>
+    <div class="stat">{{ targets | length }}</div>
+  </div>
+  <div class="card">
+    <div class="muted">Open incidents</div>
+    <div class="stat">{{ open_incidents | length }}</div>
+  </div>
+  <div class="card">
+    <div class="muted">Recent checks</div>
+    <div class="stat">{{ recent_checks | length }}</div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Open Incidents</h2>
+  {% if open_incidents %}
+  <table>
+    <thead><tr><th>Incident</th><th>Target</th><th>Status</th><th>Started</th></tr></thead>
+    <tbody>
+      {% for incident in open_incidents %}
+      <tr>
+        <td><a href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
+        <td>{{ incident.target.name }}</td>
+        <td><span class="badge bad">{{ incident.status }}</span></td>
+        <td>{{ incident.started_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No open incidents.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Recent Checks</h2>
+  {% if recent_checks %}
+  <table>
+    <thead><tr><th>Target</th><th>Result</th><th>Status</th><th>Latency</th><th>Error</th><th>Checked</th></tr></thead>
+    <tbody>
+      {% for check in recent_checks %}
+      <tr>
+        <td>{{ check.target.name }}</td>
+        <td>{% if check.success %}<span class="badge ok">success</span>{% else %}<span class="badge bad">failed</span>{% endif %}</td>
+        <td>{{ check.status_code or "-" }}</td>
+        <td>{{ check.response_time_ms or "-" }} ms</td>
+        <td>{{ check.error_type or "-" }}</td>
+        <td>{{ check.checked_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No checks recorded yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
