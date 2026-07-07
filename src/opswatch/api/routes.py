@@ -36,7 +36,7 @@ def _incident_or_404(db: Session, incident_id: int) -> Incident:
 
 @dashboard_router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+    return templates.TemplateResponse(request=request, name="login.html", context={"error": None})
 
 
 @dashboard_router.post("/login")
@@ -46,8 +46,9 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
         request.session["admin_authenticated"] = True
         return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse(
-        "login.html",
-        {"request": request, "error": "Invalid username or password"},
+        request=request,
+        name="login.html",
+        context={"error": "Invalid username or password"},
         status_code=status.HTTP_401_UNAUTHORIZED,
     )
 
@@ -71,9 +72,9 @@ def overview(request: Request, db: Session = Depends(get_db), _: None = Depends(
         select(Check).options(selectinload(Check.target)).order_by(desc(Check.checked_at), desc(Check.id)).limit(10)
     ).all()
     return templates.TemplateResponse(
-        "overview.html",
-        {
-            "request": request,
+        request=request,
+        name="overview.html",
+        context={
             "targets": targets,
             "open_incidents": open_incidents,
             "recent_checks": recent_checks,
@@ -85,7 +86,7 @@ def overview(request: Request, db: Session = Depends(get_db), _: None = Depends(
 @dashboard_router.get("/targets", response_class=HTMLResponse)
 def targets_page(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
     targets = db.scalars(select(Target).order_by(Target.name)).all()
-    return templates.TemplateResponse("targets.html", {"request": request, "targets": targets})
+    return templates.TemplateResponse(request=request, name="targets.html", context={"targets": targets})
 
 
 @dashboard_router.post("/targets")
@@ -134,8 +135,9 @@ def target_detail(
         select(Incident).where(Incident.target_id == target_id).order_by(desc(Incident.started_at)).limit(20)
     ).all()
     return templates.TemplateResponse(
-        "target_detail.html",
-        {"request": request, "target": target, "checks": checks, "incidents": incidents},
+        request=request,
+        name="target_detail.html",
+        context={"target": target, "checks": checks, "incidents": incidents},
     )
 
 
@@ -160,7 +162,7 @@ def incidents_page(request: Request, db: Session = Depends(get_db), _: None = De
     incidents = db.scalars(
         select(Incident).options(selectinload(Incident.target)).order_by(desc(Incident.started_at))
     ).all()
-    return templates.TemplateResponse("incidents.html", {"request": request, "incidents": incidents})
+    return templates.TemplateResponse(request=request, name="incidents.html", context={"incidents": incidents})
 
 
 @dashboard_router.get("/incidents/{incident_id}", response_class=HTMLResponse)
@@ -171,7 +173,7 @@ def incident_detail(
     _: None = Depends(require_dashboard_admin),
 ):
     incident = _incident_or_404(db, incident_id)
-    return templates.TemplateResponse("incident_detail.html", {"request": request, "incident": incident})
+    return templates.TemplateResponse(request=request, name="incident_detail.html", context={"incident": incident})
 
 
 @dashboard_router.post("/incidents/{incident_id}")

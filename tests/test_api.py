@@ -39,6 +39,12 @@ def login(client: TestClient) -> None:
     assert response.status_code == 303
 
 
+def test_login_page_renders(client: TestClient):
+    response = client.get("/login")
+    assert response.status_code == 200
+    assert "OpsWatch" in response.text
+
+
 def test_unauthenticated_mutation_is_rejected(client: TestClient):
     response = client.post(
         "/api/v1/targets",
