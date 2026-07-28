@@ -8,6 +8,8 @@ from opswatch.monitoring.http_checks import MonitorCheckResult
 
 
 def record_monitor_check_result(db: Session, monitor: Monitor, result: MonitorCheckResult) -> MonitorCheck:
+    """Save a check result and update the matching incident state."""
+
     check = MonitorCheck(
         monitor_id=monitor.id,
         checked_at=datetime.now(timezone.utc),
@@ -52,6 +54,8 @@ def record_monitor_check_result(db: Session, monitor: Monitor, result: MonitorCh
 
 
 def acknowledge_incident(db: Session, incident: Incident) -> Incident:
+    """Mark an open incident as acknowledged."""
+
     incident.status = "acknowledged"
     incident.acknowledged_at = datetime.now(timezone.utc)
     db.commit()
@@ -60,6 +64,8 @@ def acknowledge_incident(db: Session, incident: Incident) -> Incident:
 
 
 def resolve_incident(db: Session, incident: Incident) -> Incident:
+    """Mark an incident as resolved."""
+
     incident.status = "resolved"
     incident.resolved_at = datetime.now(timezone.utc)
     db.commit()
@@ -68,6 +74,8 @@ def resolve_incident(db: Session, incident: Incident) -> Incident:
 
 
 def monitor_has_reached_failure_threshold(db: Session, monitor: Monitor) -> bool:
+    """Return true when the latest checks meet the monitor failure threshold."""
+
     threshold = max(monitor.failure_threshold, 1)
     recent_checks = db.scalars(
         select(MonitorCheck)

@@ -4,6 +4,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class MonitorBase(BaseModel):
+    """Shared fields for monitor API requests and responses."""
+
     name: str = Field(min_length=1, max_length=120)
     url: str = Field(min_length=1, max_length=2048)
     method: str = Field(default="GET", pattern="^(GET|HEAD)$")
@@ -16,10 +18,14 @@ class MonitorBase(BaseModel):
 
 
 class MonitorCreate(MonitorBase):
+    """Data required to create a monitor."""
+
     pass
 
 
 class MonitorUpdate(BaseModel):
+    """Fields that can be changed on an existing monitor."""
+
     name: str | None = Field(default=None, min_length=1, max_length=120)
     url: str | None = Field(default=None, min_length=1, max_length=2048)
     method: str | None = Field(default=None, pattern="^(GET|HEAD)$")
@@ -32,6 +38,8 @@ class MonitorUpdate(BaseModel):
 
 
 class MonitorRead(MonitorBase):
+    """Monitor data returned by the API."""
+
     id: int
     created_at: datetime
     updated_at: datetime
@@ -40,6 +48,8 @@ class MonitorRead(MonitorBase):
 
 
 class MonitorCheckRead(BaseModel):
+    """Monitor check data returned by the API."""
+
     id: int
     monitor_id: int
     checked_at: datetime
@@ -53,12 +63,16 @@ class MonitorCheckRead(BaseModel):
 
 
 class IncidentUpdate(BaseModel):
+    """Fields that can be changed on an existing incident."""
+
     status: str | None = Field(default=None, pattern="^(open|acknowledged|resolved)$")
     severity: str | None = Field(default=None, pattern="^(info|warning|critical)$")
     notes: str | None = None
 
 
 class IncidentRead(BaseModel):
+    """Incident data returned by the API."""
+
     id: int
     monitor_id: int
     title: str

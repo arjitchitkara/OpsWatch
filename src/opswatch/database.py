@@ -10,6 +10,8 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
 def get_db() -> Generator[Session, None, None]:
+    """Yield one database session for a request."""
+
     db = SessionLocal()
     try:
         yield db

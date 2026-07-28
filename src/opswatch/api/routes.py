@@ -28,6 +28,8 @@ api_router = APIRouter(prefix="/api/v1")
 
 
 def get_monitor_or_404(db: Session, monitor_id: int) -> Monitor:
+    """Return a monitor or raise a 404 error."""
+
     monitor = db.get(Monitor, monitor_id)
     if monitor is None:
         raise HTTPException(status_code=404, detail="Monitor not found")
@@ -35,6 +37,8 @@ def get_monitor_or_404(db: Session, monitor_id: int) -> Monitor:
 
 
 def get_incident_or_404(db: Session, incident_id: int) -> Incident:
+    """Return an incident or raise a 404 error."""
+
     incident = db.get(Incident, incident_id)
     if incident is None:
         raise HTTPException(status_code=404, detail="Incident not found")
@@ -43,11 +47,15 @@ def get_incident_or_404(db: Session, incident_id: int) -> Incident:
 
 @dashboard_router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request) -> HTMLResponse:
+    """Render the admin login page."""
+
     return templates.TemplateResponse(request=request, name="login.html", context={"error": None})
 
 
 @dashboard_router.post("/login")
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    """Start an admin session when the credentials are valid."""
+
     settings = get_settings()
     if username == settings.admin_username and password == settings.admin_password:
         request.session["admin_authenticated"] = True
@@ -62,12 +70,16 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
 
 @dashboard_router.post("/logout")
 def logout(request: Request):
+    """Clear the admin session and return to the login page."""
+
     request.session.clear()
     return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @dashboard_router.get("/", response_class=HTMLResponse)
 def overview_page(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
+    """Render the dashboard overview page."""
+
     monitors = db.scalars(select(Monitor).order_by(Monitor.name)).all()
     open_incidents = db.scalars(
         select(Incident)
@@ -95,6 +107,8 @@ def overview_page(request: Request, db: Session = Depends(get_db), _: None = Dep
 
 @dashboard_router.get("/monitors", response_class=HTMLResponse)
 def monitors_page(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
+    """Render the monitor list page."""
+
     monitors = db.scalars(select(Monitor).order_by(Monitor.name)).all()
     return templates.TemplateResponse(request=request, name="monitors.html", context={"monitors": monitors})
 
@@ -114,6 +128,8 @@ def create_monitor_form(
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
+    """Create a monitor from the dashboard form."""
+
     monitor = Monitor(
         name=name,
         url=url,
@@ -137,6 +153,8 @@ def monitor_detail_page(
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
+    """Render one monitor with its checks and incidents."""
+
     monitor = get_monitor_or_404(db, monitor_id)
     checks = db.scalars(
         select(MonitorCheck)
@@ -160,6 +178,8 @@ def run_manual_monitor_check_form(
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
+    """Run one monitor check from the dashboard."""
+
     monitor = get_monitor_or_404(db, monitor_id)
     result = check_monitor_endpoint(monitor)
     record_monitor_check_result(db, monitor, result)
@@ -168,6 +188,8 @@ def run_manual_monitor_check_form(
 
 @dashboard_router.post("/monitors/{monitor_id}/delete")
 def delete_monitor_form(monitor_id: int, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
+    """Delete a monitor from the dashboard."""
+
     monitor = get_monitor_or_404(db, monitor_id)
     db.delete(monitor)
     db.commit()
@@ -176,6 +198,8 @@ def delete_monitor_form(monitor_id: int, db: Session = Depends(get_db), _: None 
 
 @dashboard_router.get("/incidents", response_class=HTMLResponse)
 def incidents_page(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
+    """Render the incident list page."""
+
     incidents = db.scalars(
         select(Incident).options(selectinload(Incident.monitor)).order_by(desc(Incident.started_at))
     ).all()
@@ -189,6 +213,8 @@ def incident_detail_page(
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
+    """Render one incident."""
+
     incident = get_incident_or_404(db, incident_id)
     return templates.TemplateResponse(request=request, name="incident_detail.html", context={"incident": incident})
 
@@ -202,6 +228,8 @@ def update_incident_form(
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
+    """Update an incident from the dashboard form."""
+
     incident = get_incident_or_404(db, incident_id)
     incident.status = status_value
     incident.severity = severity
@@ -216,11 +244,15 @@ def update_incident_form(
 
 @api_router.get("/monitors", response_model=list[MonitorRead])
 def list_monitors(db: Session = Depends(get_db)):
+    """Return all monitors as JSON."""
+
     return db.scalars(select(Monitor).order_by(Monitor.name)).all()
 
 
 @api_router.post("/monitors", response_model=MonitorRead, status_code=status.HTTP_201_CREATED)
 def create_monitor(payload: MonitorCreate, db: Session = Depends(get_db), _: None = Depends(require_admin)):
+    """Create a monitor from JSON input."""
+
     monitor = Monitor(**payload.model_dump())
     monitor.method = monitor.method.upper()
     db.add(monitor)
@@ -231,6 +263,8 @@ def create_monitor(payload: MonitorCreate, db: Session = Depends(get_db), _: Non
 
 @api_router.get("/monitors/{monitor_id}", response_model=MonitorRead)
 def get_monitor(monitor_id: int, db: Session = Depends(get_db)):
+    """Return one monitor as JSON."""
+
     return get_monitor_or_404(db, monitor_id)
 
 
@@ -241,6 +275,8 @@ def update_monitor(
     db: Session = Depends(get_db),
     _: None = Depends(require_admin),
 ):
+    """Update one monitor from JSON input."""
+
     monitor = get_monitor_or_404(db, monitor_id)
     updates = payload.model_dump(exclude_unset=True)
     for field, value in updates.items():
@@ -252,6 +288,8 @@ def update_monitor(
 
 @api_router.delete("/monitors/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_monitor(monitor_id: int, db: Session = Depends(get_db), _: None = Depends(require_admin)):
+    """Delete one monitor."""
+
     monitor = get_monitor_or_404(db, monitor_id)
     db.delete(monitor)
     db.commit()
@@ -260,6 +298,8 @@ def delete_monitor(monitor_id: int, db: Session = Depends(get_db), _: None = Dep
 
 @api_router.post("/monitors/{monitor_id}/check", response_model=MonitorCheckRead)
 def run_manual_monitor_check(monitor_id: int, db: Session = Depends(get_db), _: None = Depends(require_admin)):
+    """Run one monitor check and return the saved result as JSON."""
+
     monitor = get_monitor_or_404(db, monitor_id)
     result = check_monitor_endpoint(monitor)
     return record_monitor_check_result(db, monitor, result)
@@ -272,6 +312,8 @@ def list_monitor_checks(
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
 ):
+    """Return monitor checks as JSON with optional filters."""
+
     query = select(MonitorCheck).order_by(desc(MonitorCheck.checked_at), desc(MonitorCheck.id)).limit(limit)
     if monitor_id is not None:
         query = query.where(MonitorCheck.monitor_id == monitor_id)
@@ -286,6 +328,8 @@ def list_checks_for_monitor(
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
 ):
+    """Return checks for one monitor as JSON."""
+
     get_monitor_or_404(db, monitor_id)
     return db.scalars(
         select(MonitorCheck)
@@ -297,6 +341,8 @@ def list_checks_for_monitor(
 
 @api_router.get("/incidents", response_model=list[IncidentRead])
 def list_incidents(status_filter: str | None = Query(default=None, alias="status"), db: Session = Depends(get_db)):
+    """Return incidents as JSON with an optional status filter."""
+
     query = select(Incident).order_by(desc(Incident.started_at))
     if status_filter:
         query = query.where(Incident.status == status_filter)
@@ -305,6 +351,8 @@ def list_incidents(status_filter: str | None = Query(default=None, alias="status
 
 @api_router.get("/incidents/{incident_id}", response_model=IncidentRead)
 def get_incident(incident_id: int, db: Session = Depends(get_db)):
+    """Return one incident as JSON."""
+
     return get_incident_or_404(db, incident_id)
 
 
@@ -315,6 +363,8 @@ def update_incident(
     db: Session = Depends(get_db),
     _: None = Depends(require_admin),
 ):
+    """Update one incident from JSON input."""
+
     incident = get_incident_or_404(db, incident_id)
     updates = payload.model_dump(exclude_unset=True)
     for field, value in updates.items():

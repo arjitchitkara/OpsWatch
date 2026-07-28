@@ -5,14 +5,19 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 def utc_now() -> datetime:
+    """Return the current time in UTC."""
     return datetime.now(timezone.utc)
 
 
 class Base(DeclarativeBase):
+    """Base class for all SQLAlchemy models."""
+
     pass
 
 
 class Monitor(Base):
+    """A URL or endpoint that OpsWatch checks on a schedule."""
+
     __tablename__ = "monitors"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -38,6 +43,8 @@ class Monitor(Base):
 
 
 class MonitorCheck(Base):
+    """One recorded check result for a monitor."""
+
     __tablename__ = "monitor_checks"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -53,6 +60,8 @@ class MonitorCheck(Base):
 
 
 class Incident(Base):
+    """A period where a monitor is failing or needs attention."""
+
     __tablename__ = "incidents"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

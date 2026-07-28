@@ -8,6 +8,8 @@ from opswatch.models import Monitor
 
 @dataclass(frozen=True)
 class MonitorCheckResult:
+    """Result from one HTTP check."""
+
     success: bool
     status_code: int | None
     response_time_ms: int | None
@@ -16,6 +18,8 @@ class MonitorCheckResult:
 
 
 def check_monitor_endpoint(monitor: Monitor, client: httpx.Client | None = None) -> MonitorCheckResult:
+    """Send one HTTP request for a monitor and return the result."""
+
     method = monitor.method.upper()
     if method not in {"GET", "HEAD"}:
         return MonitorCheckResult(False, None, None, "invalid_method", f"Unsupported method: {monitor.method}")

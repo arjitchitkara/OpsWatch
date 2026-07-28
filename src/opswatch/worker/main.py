@@ -15,6 +15,8 @@ logger = logging.getLogger("opswatch.worker")
 
 
 def monitor_is_due_for_check(db, monitor: Monitor) -> bool:
+    """Return true when a monitor should be checked now."""
+
     latest_check = db.scalar(
         select(MonitorCheck)
         .where(MonitorCheck.monitor_id == monitor.id)
@@ -28,6 +30,8 @@ def monitor_is_due_for_check(db, monitor: Monitor) -> bool:
 
 
 def run_due_monitor_checks_once() -> None:
+    """Check each enabled monitor that is due for a check."""
+
     with SessionLocal() as db:
         monitors = db.scalars(select(Monitor).where(Monitor.enabled.is_(True)).order_by(Monitor.id)).all()
         for monitor in monitors:
@@ -39,6 +43,8 @@ def run_due_monitor_checks_once() -> None:
 
 
 def main() -> None:
+    """Run the monitor worker loop forever."""
+
     settings = get_settings()
     logger.info("OpsWatch worker started; poll interval=%ss", settings.worker_poll_seconds)
     while True:
