@@ -1,60 +1,94 @@
 {% extends "base.html" %}
 {% block title %}{{ monitor.name }} - OpsWatch{% endblock %}
 {% block content %}
-<h1>{{ monitor.name }}</h1>
-<section class="panel">
-  <p><strong>URL:</strong> {{ monitor.url }}</p>
-  <p><strong>Expected:</strong> {{ monitor.method }} {{ monitor.expected_status }}</p>
-  <p><strong>Interval:</strong> {{ monitor.interval_seconds }}s, threshold {{ monitor.failure_threshold }}</p>
-  <div class="actions">
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <p class="text-sm uppercase tracking-[0.2em] text-ops-green">Monitor Detail</p>
+    <h1 class="mt-2 text-3xl font-semibold">{{ monitor.name }}</h1>
+  </div>
+  <div class="flex flex-wrap gap-2">
     <form action="/monitors/{{ monitor.id }}/check" method="post">
-      <button type="submit">Run Manual Check</button>
+      <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Run Check</button>
     </form>
-    <a class="button" href="/api/v1/monitors/{{ monitor.id }}/checks">Checks JSON</a>
+    <a class="rounded-md border border-ops-line px-4 py-2 text-sm font-semibold text-ops-muted hover:border-ops-green hover:text-ops-green" href="/api/v1/monitors/{{ monitor.id }}/checks">Checks JSON</a>
+  </div>
+</div>
+
+<section class="mb-6 grid gap-4 md:grid-cols-3">
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">URL</div>
+    <div class="mt-3 break-all text-sm">{{ monitor.url }}</div>
+  </div>
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Expected</div>
+    <div class="mt-3 text-2xl font-semibold">{{ monitor.method }} {{ monitor.expected_status }}</div>
+  </div>
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Schedule</div>
+    <div class="mt-3 text-2xl font-semibold">{{ monitor.interval_seconds }}s</div>
+    <div class="mt-1 text-sm text-ops-muted">threshold {{ monitor.failure_threshold }}</div>
   </div>
 </section>
 
-<section class="panel">
-  <h2>Recent Checks</h2>
+<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
+  <div class="border-b border-ops-line px-5 py-4">
+    <h2 class="text-lg font-semibold">Recent Checks</h2>
+  </div>
   {% if checks %}
-  <table>
-    <thead><tr><th>Result</th><th>Status</th><th>Latency</th><th>Error</th><th>Message</th><th>Checked</th></tr></thead>
-    <tbody>
-      {% for check in checks %}
-      <tr>
-        <td>{% if check.success %}<span class="badge ok">success</span>{% else %}<span class="badge bad">failed</span>{% endif %}</td>
-        <td>{{ check.status_code or "-" }}</td>
-        <td>{{ check.response_time_ms or "-" }} ms</td>
-        <td>{{ check.error_type or "-" }}</td>
-        <td>{{ check.error_message or "-" }}</td>
-        <td>{{ check.checked_at }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
+        <tr><th class="px-5 py-3">Result</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Latency</th><th class="px-5 py-3">Error</th><th class="px-5 py-3">Message</th><th class="px-5 py-3">Checked</th></tr>
+      </thead>
+      <tbody class="divide-y divide-ops-line">
+        {% for check in checks %}
+        <tr class="hover:bg-ops-panel2/70">
+          <td class="px-5 py-4">
+            {% if check.success %}
+            <span class="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-ops-green">success</span>
+            {% else %}
+            <span class="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-ops-red">failed</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-4">{{ check.status_code or "-" }}</td>
+          <td class="px-5 py-4">{{ check.response_time_ms or "-" }} ms</td>
+          <td class="px-5 py-4 text-ops-muted">{{ check.error_type or "-" }}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ check.error_message or "-" }}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ check.checked_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-  <p class="muted">No checks recorded.</p>
+  <p class="px-5 py-8 text-sm text-ops-muted">No checks recorded.</p>
   {% endif %}
 </section>
 
-<section class="panel">
-  <h2>Incidents</h2>
+<section class="rounded-lg border border-ops-line bg-ops-panel">
+  <div class="border-b border-ops-line px-5 py-4">
+    <h2 class="text-lg font-semibold">Incidents</h2>
+  </div>
   {% if incidents %}
-  <table>
-    <thead><tr><th>Title</th><th>Status</th><th>Started</th><th>Resolved</th></tr></thead>
-    <tbody>
-      {% for incident in incidents %}
-      <tr>
-        <td><a href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
-        <td>{{ incident.status }}</td>
-        <td>{{ incident.started_at }}</td>
-        <td>{{ incident.resolved_at or "-" }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
+        <tr><th class="px-5 py-3">Title</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Started</th><th class="px-5 py-3">Resolved</th></tr>
+      </thead>
+      <tbody class="divide-y divide-ops-line">
+        {% for incident in incidents %}
+        <tr class="hover:bg-ops-panel2/70">
+          <td class="px-5 py-4"><a class="text-ops-green hover:underline" href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
+          <td class="px-5 py-4">{{ incident.status }}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ incident.started_at }}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ incident.resolved_at or "-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-  <p class="muted">No incidents for this monitor.</p>
+  <p class="px-5 py-8 text-sm text-ops-muted">No incidents for this monitor.</p>
   {% endif %}
 </section>
 {% endblock %}

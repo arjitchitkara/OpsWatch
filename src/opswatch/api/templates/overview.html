@@ -1,63 +1,88 @@
 {% extends "base.html" %}
 {% block title %}Overview - OpsWatch{% endblock %}
 {% block content %}
-<h1>Overview</h1>
-<section class="grid">
-  <div class="card">
-    <div class="muted">Monitors</div>
-    <div class="stat">{{ monitors | length }}</div>
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <p class="text-sm uppercase tracking-[0.2em] text-ops-green">Operations Console</p>
+    <h1 class="mt-2 text-3xl font-semibold text-ops-text">Overview</h1>
   </div>
-  <div class="card">
-    <div class="muted">Open incidents</div>
-    <div class="stat">{{ open_incidents | length }}</div>
+  <a class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" href="/monitors">Manage Monitors</a>
+</div>
+
+<section class="mb-6 grid gap-4 md:grid-cols-3">
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Monitors</div>
+    <div class="mt-3 text-4xl font-semibold">{{ monitors | length }}</div>
   </div>
-  <div class="card">
-    <div class="muted">Recent checks</div>
-    <div class="stat">{{ recent_checks | length }}</div>
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Open incidents</div>
+    <div class="mt-3 text-4xl font-semibold text-ops-red">{{ open_incidents | length }}</div>
+  </div>
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Recent checks</div>
+    <div class="mt-3 text-4xl font-semibold">{{ recent_checks | length }}</div>
   </div>
 </section>
 
-<section class="panel">
-  <h2>Open Incidents</h2>
+<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
+  <div class="border-b border-ops-line px-5 py-4">
+    <h2 class="text-lg font-semibold">Open Incidents</h2>
+  </div>
   {% if open_incidents %}
-  <table>
-    <thead><tr><th>Incident</th><th>Monitor</th><th>Status</th><th>Started</th></tr></thead>
-    <tbody>
-      {% for incident in open_incidents %}
-      <tr>
-        <td><a href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
-        <td>{{ incident.monitor.name }}</td>
-        <td><span class="badge bad">{{ incident.status }}</span></td>
-        <td>{{ incident.started_at }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
+        <tr><th class="px-5 py-3">Incident</th><th class="px-5 py-3">Monitor</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Started</th></tr>
+      </thead>
+      <tbody class="divide-y divide-ops-line">
+        {% for incident in open_incidents %}
+        <tr class="hover:bg-ops-panel2/70">
+          <td class="px-5 py-4"><a class="text-ops-green hover:underline" href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
+          <td class="px-5 py-4">{{ incident.monitor.name }}</td>
+          <td class="px-5 py-4"><span class="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-ops-red">{{ incident.status }}</span></td>
+          <td class="px-5 py-4 text-ops-muted">{{ incident.started_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-  <p class="muted">No open incidents.</p>
+  <p class="px-5 py-8 text-sm text-ops-muted">No open incidents.</p>
   {% endif %}
 </section>
 
-<section class="panel">
-  <h2>Recent Checks</h2>
+<section class="rounded-lg border border-ops-line bg-ops-panel">
+  <div class="border-b border-ops-line px-5 py-4">
+    <h2 class="text-lg font-semibold">Recent Checks</h2>
+  </div>
   {% if recent_checks %}
-  <table>
-    <thead><tr><th>Monitor</th><th>Result</th><th>Status</th><th>Latency</th><th>Error</th><th>Checked</th></tr></thead>
-    <tbody>
-      {% for check in recent_checks %}
-      <tr>
-        <td>{{ check.monitor.name }}</td>
-        <td>{% if check.success %}<span class="badge ok">success</span>{% else %}<span class="badge bad">failed</span>{% endif %}</td>
-        <td>{{ check.status_code or "-" }}</td>
-        <td>{{ check.response_time_ms or "-" }} ms</td>
-        <td>{{ check.error_type or "-" }}</td>
-        <td>{{ check.checked_at }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
+        <tr><th class="px-5 py-3">Monitor</th><th class="px-5 py-3">Result</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Latency</th><th class="px-5 py-3">Error</th><th class="px-5 py-3">Checked</th></tr>
+      </thead>
+      <tbody class="divide-y divide-ops-line">
+        {% for check in recent_checks %}
+        <tr class="hover:bg-ops-panel2/70">
+          <td class="px-5 py-4">{{ check.monitor.name }}</td>
+          <td class="px-5 py-4">
+            {% if check.success %}
+            <span class="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-ops-green">success</span>
+            {% else %}
+            <span class="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-ops-red">failed</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-4">{{ check.status_code or "-" }}</td>
+          <td class="px-5 py-4">{{ check.response_time_ms or "-" }} ms</td>
+          <td class="px-5 py-4 text-ops-muted">{{ check.error_type or "-" }}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ check.checked_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-  <p class="muted">No checks recorded yet.</p>
+  <p class="px-5 py-8 text-sm text-ops-muted">No checks recorded yet.</p>
   {% endif %}
 </section>
 {% endblock %}

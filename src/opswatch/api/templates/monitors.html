@@ -1,54 +1,91 @@
 {% extends "base.html" %}
 {% block title %}Monitors - OpsWatch{% endblock %}
 {% block content %}
-<h1>Monitors</h1>
-<section class="panel">
-  <h2>Add Monitor</h2>
-  <form class="stack" action="/monitors" method="post">
-    <div class="form-grid">
-      <label>Name <input name="name" placeholder="Failure Lab" required></label>
-      <label>URL <input name="url" placeholder="http://failure-lab:9000/health" required></label>
-      <label>Method
-        <select name="method">
+<div class="mb-8">
+  <p class="text-sm uppercase tracking-[0.2em] text-ops-green">HTTP Monitoring</p>
+  <h1 class="mt-2 text-3xl font-semibold">Monitors</h1>
+</div>
+
+<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
+  <div class="border-b border-ops-line px-5 py-4">
+    <h2 class="text-lg font-semibold">Add Monitor</h2>
+  </div>
+  <form class="grid gap-5 p-5" action="/monitors" method="post">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <label class="grid gap-2 text-sm text-ops-muted">Name
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="name" placeholder="Failure Lab" required>
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted xl:col-span-2">URL
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="url" placeholder="http://failure-lab:9000/health" required>
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Method
+        <select class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="method">
           <option>GET</option>
           <option>HEAD</option>
         </select>
       </label>
-      <label>Expected Status <input name="expected_status" type="number" value="200"></label>
-      <label>Interval Seconds <input name="interval_seconds" type="number" value="60"></label>
-      <label>Timeout Seconds <input name="timeout_seconds" type="number" value="5"></label>
-      <label>Failure Threshold <input name="failure_threshold" type="number" value="3"></label>
+      <label class="grid gap-2 text-sm text-ops-muted">Expected Status
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_status" type="number" value="200">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Interval Seconds
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="interval_seconds" type="number" value="60">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Timeout Seconds
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="timeout_seconds" type="number" value="5">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Failure Threshold
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="failure_threshold" type="number" value="3">
+      </label>
     </div>
-    <label>Expected Body <input name="expected_body" placeholder="optional substring"></label>
-    <label><input name="enabled" type="checkbox" value="true" checked> Enabled</label>
-    <button type="submit">Create Monitor</button>
+    <label class="grid gap-2 text-sm text-ops-muted">Expected Body
+      <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_body" placeholder="optional substring">
+    </label>
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <label class="flex items-center gap-2 text-sm text-ops-muted">
+        <input class="h-4 w-4 accent-ops-green" name="enabled" type="checkbox" value="true" checked>
+        Enabled
+      </label>
+      <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Create Monitor</button>
+    </div>
   </form>
 </section>
 
-<section class="panel">
-  <h2>Configured Monitors</h2>
+<section class="rounded-lg border border-ops-line bg-ops-panel">
+  <div class="border-b border-ops-line px-5 py-4">
+    <h2 class="text-lg font-semibold">Configured Monitors</h2>
+  </div>
   {% if monitors %}
-  <table>
-    <thead><tr><th>Name</th><th>URL</th><th>Method</th><th>Interval</th><th>Enabled</th><th></th></tr></thead>
-    <tbody>
-      {% for monitor in monitors %}
-      <tr>
-        <td><a href="/monitors/{{ monitor.id }}">{{ monitor.name }}</a></td>
-        <td>{{ monitor.url }}</td>
-        <td>{{ monitor.method }}</td>
-        <td>{{ monitor.interval_seconds }}s</td>
-        <td>{{ monitor.enabled }}</td>
-        <td>
-          <form action="/monitors/{{ monitor.id }}/delete" method="post">
-            <button class="danger" type="submit">Delete</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
+        <tr><th class="px-5 py-3">Name</th><th class="px-5 py-3">URL</th><th class="px-5 py-3">Method</th><th class="px-5 py-3">Interval</th><th class="px-5 py-3">Enabled</th><th class="px-5 py-3"></th></tr>
+      </thead>
+      <tbody class="divide-y divide-ops-line">
+        {% for monitor in monitors %}
+        <tr class="hover:bg-ops-panel2/70">
+          <td class="px-5 py-4 font-medium"><a class="text-ops-green hover:underline" href="/monitors/{{ monitor.id }}">{{ monitor.name }}</a></td>
+          <td class="max-w-xl truncate px-5 py-4 text-ops-muted">{{ monitor.url }}</td>
+          <td class="px-5 py-4">{{ monitor.method }}</td>
+          <td class="px-5 py-4">{{ monitor.interval_seconds }}s</td>
+          <td class="px-5 py-4">
+            {% if monitor.enabled %}
+            <span class="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-ops-green">enabled</span>
+            {% else %}
+            <span class="rounded-full bg-slate-500/20 px-2.5 py-1 text-xs font-semibold text-slate-300">paused</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-4 text-right">
+            <form action="/monitors/{{ monitor.id }}/delete" method="post">
+              <button class="rounded-md border border-red-500/40 px-3 py-1.5 text-xs font-semibold text-ops-red hover:bg-red-500/10" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-  <p class="muted">No monitors yet.</p>
+  <p class="px-5 py-8 text-sm text-ops-muted">No monitors yet.</p>
   {% endif %}
 </section>
 {% endblock %}
