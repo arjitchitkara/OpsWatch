@@ -1,32 +1,37 @@
+# Project metadata and dependency declarations for the Python package
 [project]
-name = "opswatch"
-version = "0.1.0"
-description = "Local-first uptime monitoring and incident response MVP."
-requires-python = ">=3.12"
+name = "opswatch"  # package name used for distribution and installation
+version = "0.1.0"  # package version following semantic versioning
+description = "Local-first uptime monitoring and incident response MVP."  # short project summary
+requires-python = ">=3.12"  # minimum Python version required to run this package
 dependencies = [
-    "alembic>=1.13",
-    "fastapi>=0.115",
-    "httpx>=0.27",
-    "itsdangerous>=2.2",
-    "jinja2>=3.1",
-    "psycopg[binary]>=3.2",
-    "python-multipart>=0.0.9",
-    "sqlalchemy>=2.0",
-    "uvicorn[standard]>=0.30",
+    "alembic>=1.13",  # database migrations management
+    "fastapi>=0.115",  # web framework for building API endpoints and server routes
+    "httpx>=0.27",  # HTTP client used for making outbound requests
+    "itsdangerous>=2.2",  # signing utilities for secure data generation and validation
+    "jinja2>=3.1",  # templating engine for rendering HTML pages
+    "psycopg[binary]>=3.2",  # PostgreSQL database driver
+    "python-multipart>=0.0.9",  # file upload and form parsing support
+    "sqlalchemy>=2.0",  # ORM and SQL toolkit for database interactions
+    "uvicorn[standard]>=0.30",  # ASGI server for running FastAPI in development/production
 ]
 
 [project.optional-dependencies]
+# optional dependency groups that are not required for production runtime
 dev = [
-    "pytest>=8.2",
+    "pytest>=8.2",  # testing framework used for automated unit/integration tests
 ]
 
 [build-system]
+# build requirements and backend for packaging the project
 requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
+# tells setuptools where to discover Python packages in the source tree
 where = ["src"]
 
 [tool.pytest.ini_options]
+# pytest configuration for locating source and tests during test runs
 pythonpath = ["src"]
 testpaths = ["tests"]
