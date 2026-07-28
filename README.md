@@ -4,7 +4,7 @@ OpsWatch is a local-first uptime monitoring and incident response platform.
 
 The V1 demo runs with Docker Compose and shows the core operations loop:
 
-- create HTTP targets
+- create HTTP monitors
 - run scheduled and manual checks
 - record status, latency, and errors
 - open incidents after repeated failures
@@ -33,7 +33,7 @@ FastAPI API
 Monitoring worker
   -> PgBouncer
   -> PostgreSQL
-  -> monitored targets
+  -> monitored URLs
 ```
 
 ## Quick Start
@@ -49,7 +49,7 @@ Then open:
 - API health: http://localhost/health
 - Failure Lab: http://localhost/failure-lab/health
 
-## Useful Demo Targets
+## Useful Demo Monitors
 
 When running through Docker Compose, these URLs are reachable from the API and
 worker containers:

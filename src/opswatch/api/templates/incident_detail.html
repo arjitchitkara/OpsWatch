@@ -3,7 +3,7 @@
 {% block content %}
 <h1>{{ incident.title }}</h1>
 <section class="panel">
-  <p><strong>Target:</strong> <a href="/targets/{{ incident.target.id }}">{{ incident.target.name }}</a></p>
+  <p><strong>Monitor:</strong> <a href="/monitors/{{ incident.monitor.id }}">{{ incident.monitor.name }}</a></p>
   <p><strong>Started:</strong> {{ incident.started_at }}</p>
   <p><strong>Resolved:</strong> {{ incident.resolved_at or "-" }}</p>
   <p><strong>Reason:</strong> {{ incident.failure_reason or "-" }}</p>

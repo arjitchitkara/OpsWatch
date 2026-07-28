@@ -5,12 +5,12 @@
 <section class="panel">
   {% if incidents %}
   <table>
-    <thead><tr><th>Title</th><th>Target</th><th>Severity</th><th>Status</th><th>Started</th><th>Resolved</th></tr></thead>
+    <thead><tr><th>Title</th><th>Monitor</th><th>Severity</th><th>Status</th><th>Started</th><th>Resolved</th></tr></thead>
     <tbody>
       {% for incident in incidents %}
       <tr>
         <td><a href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
-        <td>{{ incident.target.name }}</td>
+        <td>{{ incident.monitor.name }}</td>
         <td><span class="badge warn">{{ incident.severity }}</span></td>
         <td>{{ incident.status }}</td>
         <td>{{ incident.started_at }}</td>

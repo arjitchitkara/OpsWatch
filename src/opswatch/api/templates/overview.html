@@ -4,8 +4,8 @@
 <h1>Overview</h1>
 <section class="grid">
   <div class="card">
-    <div class="muted">Targets</div>
-    <div class="stat">{{ targets | length }}</div>
+    <div class="muted">Monitors</div>
+    <div class="stat">{{ monitors | length }}</div>
   </div>
   <div class="card">
     <div class="muted">Open incidents</div>
@@ -21,12 +21,12 @@
   <h2>Open Incidents</h2>
   {% if open_incidents %}
   <table>
-    <thead><tr><th>Incident</th><th>Target</th><th>Status</th><th>Started</th></tr></thead>
+    <thead><tr><th>Incident</th><th>Monitor</th><th>Status</th><th>Started</th></tr></thead>
     <tbody>
       {% for incident in open_incidents %}
       <tr>
         <td><a href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
-        <td>{{ incident.target.name }}</td>
+        <td>{{ incident.monitor.name }}</td>
         <td><span class="badge bad">{{ incident.status }}</span></td>
         <td>{{ incident.started_at }}</td>
       </tr>
@@ -42,11 +42,11 @@
   <h2>Recent Checks</h2>
   {% if recent_checks %}
   <table>
-    <thead><tr><th>Target</th><th>Result</th><th>Status</th><th>Latency</th><th>Error</th><th>Checked</th></tr></thead>
+    <thead><tr><th>Monitor</th><th>Result</th><th>Status</th><th>Latency</th><th>Error</th><th>Checked</th></tr></thead>
     <tbody>
       {% for check in recent_checks %}
       <tr>
-        <td>{{ check.target.name }}</td>
+        <td>{{ check.monitor.name }}</td>
         <td>{% if check.success %}<span class="badge ok">success</span>{% else %}<span class="badge bad">failed</span>{% endif %}</td>
         <td>{{ check.status_code or "-" }}</td>
         <td>{{ check.response_time_ms or "-" }} ms</td>

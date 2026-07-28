@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class TargetBase(BaseModel):
+class MonitorBase(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     url: str = Field(min_length=1, max_length=2048)
     method: str = Field(default="GET", pattern="^(GET|HEAD)$")
@@ -15,11 +15,11 @@ class TargetBase(BaseModel):
     enabled: bool = True
 
 
-class TargetCreate(TargetBase):
+class MonitorCreate(MonitorBase):
     pass
 
 
-class TargetUpdate(BaseModel):
+class MonitorUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     url: str | None = Field(default=None, min_length=1, max_length=2048)
     method: str | None = Field(default=None, pattern="^(GET|HEAD)$")
@@ -31,7 +31,7 @@ class TargetUpdate(BaseModel):
     enabled: bool | None = None
 
 
-class TargetRead(TargetBase):
+class MonitorRead(MonitorBase):
     id: int
     created_at: datetime
     updated_at: datetime
@@ -39,9 +39,9 @@ class TargetRead(TargetBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CheckRead(BaseModel):
+class MonitorCheckRead(BaseModel):
     id: int
-    target_id: int
+    monitor_id: int
     checked_at: datetime
     success: bool
     status_code: int | None
@@ -60,7 +60,7 @@ class IncidentUpdate(BaseModel):
 
 class IncidentRead(BaseModel):
     id: int
-    target_id: int
+    monitor_id: int
     title: str
     severity: str
     status: str

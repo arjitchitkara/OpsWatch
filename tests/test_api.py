@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from opswatch.api.main import app
 from opswatch.database import get_db
-from opswatch.models import Base, Incident, Target
+from opswatch.models import Base, Incident, Monitor
 
 
 @pytest.fixture
@@ -47,16 +47,16 @@ def test_login_page_renders(client: TestClient):
 
 def test_unauthenticated_mutation_is_rejected(client: TestClient):
     response = client.post(
-        "/api/v1/targets",
+        "/api/v1/monitors",
         json={"name": "Demo", "url": "http://example.test", "method": "GET"},
     )
     assert response.status_code == 401
 
 
-def test_target_crud_with_session_auth(client: TestClient):
+def test_monitor_crud_with_session_auth(client: TestClient):
     login(client)
     created = client.post(
-        "/api/v1/targets",
+        "/api/v1/monitors",
         json={
             "name": "Demo",
             "url": "http://example.test",
@@ -69,17 +69,17 @@ def test_target_crud_with_session_auth(client: TestClient):
         },
     )
     assert created.status_code == 201
-    target_id = created.json()["id"]
+    monitor_id = created.json()["id"]
 
-    listed = client.get("/api/v1/targets")
+    listed = client.get("/api/v1/monitors")
     assert listed.status_code == 200
     assert listed.json()[0]["name"] == "Demo"
 
-    patched = client.patch(f"/api/v1/targets/{target_id}", json={"enabled": False})
+    patched = client.patch(f"/api/v1/monitors/{monitor_id}", json={"enabled": False})
     assert patched.status_code == 200
     assert patched.json()["enabled"] is False
 
-    deleted = client.delete(f"/api/v1/targets/{target_id}")
+    deleted = client.delete(f"/api/v1/monitors/{monitor_id}")
     assert deleted.status_code == 204
 
 
@@ -87,11 +87,11 @@ def test_incident_patch_sets_acknowledged_timestamp(client: TestClient):
     login(client)
 
     db: Session = next(app.dependency_overrides[get_db]())
-    target = Target(name="Demo", url="http://example.test", method="GET")
-    db.add(target)
+    monitor = Monitor(name="Demo", url="http://example.test", method="GET")
+    db.add(monitor)
     db.commit()
-    db.refresh(target)
-    incident = Incident(target_id=target.id, title="Demo failing", status="open", severity="warning")
+    db.refresh(monitor)
+    incident = Incident(monitor_id=monitor.id, title="Demo failing", status="open", severity="warning")
     db.add(incident)
     db.commit()
     db.refresh(incident)

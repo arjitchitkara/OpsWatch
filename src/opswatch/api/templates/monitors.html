@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Targets - OpsWatch{% endblock %}
+{% block title %}Monitors - OpsWatch{% endblock %}
 {% block content %}
-<h1>Targets</h1>
+<h1>Monitors</h1>
 <section class="panel">
-  <h2>Add Target</h2>
-  <form class="stack" action="/targets" method="post">
+  <h2>Add Monitor</h2>
+  <form class="stack" action="/monitors" method="post">
     <div class="form-grid">
       <label>Name <input name="name" placeholder="Failure Lab" required></label>
       <label>URL <input name="url" placeholder="http://failure-lab:9000/health" required></label>
@@ -21,25 +21,25 @@
     </div>
     <label>Expected Body <input name="expected_body" placeholder="optional substring"></label>
     <label><input name="enabled" type="checkbox" value="true" checked> Enabled</label>
-    <button type="submit">Create Target</button>
+    <button type="submit">Create Monitor</button>
   </form>
 </section>
 
 <section class="panel">
-  <h2>Configured Targets</h2>
-  {% if targets %}
+  <h2>Configured Monitors</h2>
+  {% if monitors %}
   <table>
     <thead><tr><th>Name</th><th>URL</th><th>Method</th><th>Interval</th><th>Enabled</th><th></th></tr></thead>
     <tbody>
-      {% for target in targets %}
+      {% for monitor in monitors %}
       <tr>
-        <td><a href="/targets/{{ target.id }}">{{ target.name }}</a></td>
-        <td>{{ target.url }}</td>
-        <td>{{ target.method }}</td>
-        <td>{{ target.interval_seconds }}s</td>
-        <td>{{ target.enabled }}</td>
+        <td><a href="/monitors/{{ monitor.id }}">{{ monitor.name }}</a></td>
+        <td>{{ monitor.url }}</td>
+        <td>{{ monitor.method }}</td>
+        <td>{{ monitor.interval_seconds }}s</td>
+        <td>{{ monitor.enabled }}</td>
         <td>
-          <form action="/targets/{{ target.id }}/delete" method="post">
+          <form action="/monitors/{{ monitor.id }}/delete" method="post">
             <button class="danger" type="submit">Delete</button>
           </form>
         </td>
@@ -48,7 +48,7 @@
     </tbody>
   </table>
   {% else %}
-  <p class="muted">No targets yet.</p>
+  <p class="muted">No monitors yet.</p>
   {% endif %}
 </section>
 {% endblock %}

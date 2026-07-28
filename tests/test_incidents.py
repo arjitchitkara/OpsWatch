@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
-from opswatch.models import Base, Incident, Target
-from opswatch.services.checker import CheckOutcome
-from opswatch.services.incidents import record_check_and_update_incidents
+from opswatch.models import Base, Incident, Monitor
+from opswatch.monitoring.http_checks import MonitorCheckResult
+from opswatch.monitoring.incident_lifecycle import record_monitor_check_result
 
 
 def make_session():
@@ -12,8 +12,8 @@ def make_session():
     return sessionmaker(bind=engine, autoflush=False)()
 
 
-def add_target(db, threshold=3):
-    target = Target(
+def add_monitor(db, threshold=3):
+    monitor = Monitor(
         name="Demo",
         url="http://example.test",
         method="GET",
@@ -23,18 +23,18 @@ def add_target(db, threshold=3):
         failure_threshold=threshold,
         enabled=True,
     )
-    db.add(target)
+    db.add(monitor)
     db.commit()
-    db.refresh(target)
-    return target
+    db.refresh(monitor)
+    return monitor
 
 
 def failed(message="failed"):
-    return CheckOutcome(False, 500, 10, "unexpected_status", message)
+    return MonitorCheckResult(False, 500, 10, "unexpected_status", message)
 
 
 def succeeded():
-    return CheckOutcome(True, 200, 10, None, None)
+    return MonitorCheckResult(True, 200, 10, None, None)
 
 
 def incidents(db):
@@ -43,13 +43,13 @@ def incidents(db):
 
 def test_threshold_opens_one_incident():
     db = make_session()
-    target = add_target(db, threshold=3)
+    monitor = add_monitor(db, threshold=3)
 
-    record_check_and_update_incidents(db, target, failed("first"))
-    record_check_and_update_incidents(db, target, failed("second"))
+    record_monitor_check_result(db, monitor, failed("first"))
+    record_monitor_check_result(db, monitor, failed("second"))
     assert incidents(db) == []
 
-    record_check_and_update_incidents(db, target, failed("third"))
+    record_monitor_check_result(db, monitor, failed("third"))
     opened = incidents(db)
     assert len(opened) == 1
     assert opened[0].status == "open"
@@ -57,26 +57,26 @@ def test_threshold_opens_one_incident():
 
 def test_more_failures_do_not_duplicate_open_incident():
     db = make_session()
-    target = add_target(db, threshold=2)
+    monitor = add_monitor(db, threshold=2)
 
-    record_check_and_update_incidents(db, target, failed())
-    record_check_and_update_incidents(db, target, failed())
-    record_check_and_update_incidents(db, target, failed())
+    record_monitor_check_result(db, monitor, failed())
+    record_monitor_check_result(db, monitor, failed())
+    record_monitor_check_result(db, monitor, failed())
 
     assert len(incidents(db)) == 1
 
 
 def test_success_resolves_open_incident_and_later_failure_can_reopen():
     db = make_session()
-    target = add_target(db, threshold=1)
+    monitor = add_monitor(db, threshold=1)
 
-    record_check_and_update_incidents(db, target, failed())
-    record_check_and_update_incidents(db, target, succeeded())
+    record_monitor_check_result(db, monitor, failed())
+    record_monitor_check_result(db, monitor, succeeded())
     first = incidents(db)[0]
     assert first.status == "resolved"
     assert first.resolved_at is not None
 
-    record_check_and_update_incidents(db, target, failed())
+    record_monitor_check_result(db, monitor, failed())
     all_incidents = incidents(db)
     assert len(all_incidents) == 2
     assert all_incidents[1].status == "open"

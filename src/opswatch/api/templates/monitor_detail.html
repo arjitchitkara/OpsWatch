@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}{{ target.name }} - OpsWatch{% endblock %}
+{% block title %}{{ monitor.name }} - OpsWatch{% endblock %}
 {% block content %}
-<h1>{{ target.name }}</h1>
+<h1>{{ monitor.name }}</h1>
 <section class="panel">
-  <p><strong>URL:</strong> {{ target.url }}</p>
-  <p><strong>Expected:</strong> {{ target.method }} {{ target.expected_status }}</p>
-  <p><strong>Interval:</strong> {{ target.interval_seconds }}s, threshold {{ target.failure_threshold }}</p>
+  <p><strong>URL:</strong> {{ monitor.url }}</p>
+  <p><strong>Expected:</strong> {{ monitor.method }} {{ monitor.expected_status }}</p>
+  <p><strong>Interval:</strong> {{ monitor.interval_seconds }}s, threshold {{ monitor.failure_threshold }}</p>
   <div class="actions">
-    <form action="/targets/{{ target.id }}/check" method="post">
+    <form action="/monitors/{{ monitor.id }}/check" method="post">
       <button type="submit">Run Manual Check</button>
     </form>
-    <a class="button" href="/api/v1/targets/{{ target.id }}/checks">Checks JSON</a>
+    <a class="button" href="/api/v1/monitors/{{ monitor.id }}/checks">Checks JSON</a>
   </div>
 </section>
 
@@ -54,7 +54,7 @@
     </tbody>
   </table>
   {% else %}
-  <p class="muted">No incidents for this target.</p>
+  <p class="muted">No incidents for this monitor.</p>
   {% endif %}
 </section>
 {% endblock %}

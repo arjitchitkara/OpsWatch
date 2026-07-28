@@ -12,8 +12,8 @@ class Base(DeclarativeBase):
     pass
 
 
-class Target(Base):
-    __tablename__ = "targets"
+class Monitor(Base):
+    __tablename__ = "monitors"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
@@ -33,15 +33,15 @@ class Target(Base):
         onupdate=utc_now,
     )
 
-    checks: Mapped[list["Check"]] = relationship(back_populates="target", cascade="all, delete-orphan")
-    incidents: Mapped[list["Incident"]] = relationship(back_populates="target", cascade="all, delete-orphan")
+    checks: Mapped[list["MonitorCheck"]] = relationship(back_populates="monitor", cascade="all, delete-orphan")
+    incidents: Mapped[list["Incident"]] = relationship(back_populates="monitor", cascade="all, delete-orphan")
 
 
-class Check(Base):
-    __tablename__ = "checks"
+class MonitorCheck(Base):
+    __tablename__ = "monitor_checks"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    target_id: Mapped[int] = mapped_column(ForeignKey("targets.id", ondelete="CASCADE"), nullable=False)
+    monitor_id: Mapped[int] = mapped_column(ForeignKey("monitors.id", ondelete="CASCADE"), nullable=False)
     checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
     success: Mapped[bool] = mapped_column(Boolean, nullable=False)
     status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -49,14 +49,14 @@ class Check(Base):
     error_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    target: Mapped[Target] = relationship(back_populates="checks")
+    monitor: Mapped[Monitor] = relationship(back_populates="checks")
 
 
 class Incident(Base):
     __tablename__ = "incidents"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    target_id: Mapped[int] = mapped_column(ForeignKey("targets.id", ondelete="CASCADE"), nullable=False)
+    monitor_id: Mapped[int] = mapped_column(ForeignKey("monitors.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     severity: Mapped[str] = mapped_column(String(40), nullable=False, default="warning")
     status: Mapped[str] = mapped_column(String(40), nullable=False, default="open")
@@ -66,4 +66,4 @@ class Incident(Base):
     failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    target: Mapped[Target] = relationship(back_populates="incidents")
+    monitor: Mapped[Monitor] = relationship(back_populates="incidents")

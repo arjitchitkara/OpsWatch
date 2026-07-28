@@ -10,24 +10,31 @@ from sqlalchemy.orm import Session, selectinload
 from opswatch.api.auth import is_authenticated, require_admin, require_dashboard_admin
 from opswatch.config import get_settings
 from opswatch.database import get_db
-from opswatch.models import Check, Incident, Target
-from opswatch.schemas import CheckRead, IncidentRead, IncidentUpdate, TargetCreate, TargetRead, TargetUpdate
-from opswatch.services.checker import run_http_check
-from opswatch.services.incidents import record_check_and_update_incidents
+from opswatch.models import Incident, Monitor, MonitorCheck
+from opswatch.monitoring.http_checks import check_monitor_endpoint
+from opswatch.monitoring.incident_lifecycle import record_monitor_check_result
+from opswatch.schemas import (
+    IncidentRead,
+    IncidentUpdate,
+    MonitorCheckRead,
+    MonitorCreate,
+    MonitorRead,
+    MonitorUpdate,
+)
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 dashboard_router = APIRouter()
 api_router = APIRouter(prefix="/api/v1")
 
 
-def _target_or_404(db: Session, target_id: int) -> Target:
-    target = db.get(Target, target_id)
-    if target is None:
-        raise HTTPException(status_code=404, detail="Target not found")
-    return target
+def get_monitor_or_404(db: Session, monitor_id: int) -> Monitor:
+    monitor = db.get(Monitor, monitor_id)
+    if monitor is None:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+    return monitor
 
 
-def _incident_or_404(db: Session, incident_id: int) -> Incident:
+def get_incident_or_404(db: Session, incident_id: int) -> Incident:
     incident = db.get(Incident, incident_id)
     if incident is None:
         raise HTTPException(status_code=404, detail="Incident not found")
@@ -60,22 +67,25 @@ def logout(request: Request):
 
 
 @dashboard_router.get("/", response_class=HTMLResponse)
-def overview(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
-    targets = db.scalars(select(Target).order_by(Target.name)).all()
+def overview_page(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
+    monitors = db.scalars(select(Monitor).order_by(Monitor.name)).all()
     open_incidents = db.scalars(
         select(Incident)
-        .options(selectinload(Incident.target))
+        .options(selectinload(Incident.monitor))
         .where(Incident.status.in_(["open", "acknowledged"]))
         .order_by(desc(Incident.started_at))
     ).all()
     recent_checks = db.scalars(
-        select(Check).options(selectinload(Check.target)).order_by(desc(Check.checked_at), desc(Check.id)).limit(10)
+        select(MonitorCheck)
+        .options(selectinload(MonitorCheck.monitor))
+        .order_by(desc(MonitorCheck.checked_at), desc(MonitorCheck.id))
+        .limit(10)
     ).all()
     return templates.TemplateResponse(
         request=request,
         name="overview.html",
         context={
-            "targets": targets,
+            "monitors": monitors,
             "open_incidents": open_incidents,
             "recent_checks": recent_checks,
             "authenticated": is_authenticated(request),
@@ -83,14 +93,14 @@ def overview(request: Request, db: Session = Depends(get_db), _: None = Depends(
     )
 
 
-@dashboard_router.get("/targets", response_class=HTMLResponse)
-def targets_page(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
-    targets = db.scalars(select(Target).order_by(Target.name)).all()
-    return templates.TemplateResponse(request=request, name="targets.html", context={"targets": targets})
+@dashboard_router.get("/monitors", response_class=HTMLResponse)
+def monitors_page(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
+    monitors = db.scalars(select(Monitor).order_by(Monitor.name)).all()
+    return templates.TemplateResponse(request=request, name="monitors.html", context={"monitors": monitors})
 
 
-@dashboard_router.post("/targets")
-def create_target_form(
+@dashboard_router.post("/monitors")
+def create_monitor_form(
     request: Request,
     name: str = Form(...),
     url: str = Form(...),
@@ -104,7 +114,7 @@ def create_target_form(
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
-    target = Target(
+    monitor = Monitor(
         name=name,
         url=url,
         method=method.upper(),
@@ -115,64 +125,71 @@ def create_target_form(
         failure_threshold=failure_threshold,
         enabled=enabled,
     )
-    db.add(target)
+    db.add(monitor)
     db.commit()
-    return RedirectResponse("/targets", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse("/monitors", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@dashboard_router.get("/targets/{target_id}", response_class=HTMLResponse)
-def target_detail(
+@dashboard_router.get("/monitors/{monitor_id}", response_class=HTMLResponse)
+def monitor_detail_page(
     request: Request,
-    target_id: int,
+    monitor_id: int,
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
-    target = _target_or_404(db, target_id)
+    monitor = get_monitor_or_404(db, monitor_id)
     checks = db.scalars(
-        select(Check).where(Check.target_id == target_id).order_by(desc(Check.checked_at), desc(Check.id)).limit(50)
+        select(MonitorCheck)
+        .where(MonitorCheck.monitor_id == monitor_id)
+        .order_by(desc(MonitorCheck.checked_at), desc(MonitorCheck.id))
+        .limit(50)
     ).all()
     incidents = db.scalars(
-        select(Incident).where(Incident.target_id == target_id).order_by(desc(Incident.started_at)).limit(20)
+        select(Incident).where(Incident.monitor_id == monitor_id).order_by(desc(Incident.started_at)).limit(20)
     ).all()
     return templates.TemplateResponse(
         request=request,
-        name="target_detail.html",
-        context={"target": target, "checks": checks, "incidents": incidents},
+        name="monitor_detail.html",
+        context={"monitor": monitor, "checks": checks, "incidents": incidents},
     )
 
 
-@dashboard_router.post("/targets/{target_id}/check")
-def manual_check_form(target_id: int, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
-    target = _target_or_404(db, target_id)
-    outcome = run_http_check(target)
-    record_check_and_update_incidents(db, target, outcome)
-    return RedirectResponse(f"/targets/{target_id}", status_code=status.HTTP_303_SEE_OTHER)
+@dashboard_router.post("/monitors/{monitor_id}/check")
+def run_manual_monitor_check_form(
+    monitor_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_dashboard_admin),
+):
+    monitor = get_monitor_or_404(db, monitor_id)
+    result = check_monitor_endpoint(monitor)
+    record_monitor_check_result(db, monitor, result)
+    return RedirectResponse(f"/monitors/{monitor_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@dashboard_router.post("/targets/{target_id}/delete")
-def delete_target_form(target_id: int, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
-    target = _target_or_404(db, target_id)
-    db.delete(target)
+@dashboard_router.post("/monitors/{monitor_id}/delete")
+def delete_monitor_form(monitor_id: int, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
+    monitor = get_monitor_or_404(db, monitor_id)
+    db.delete(monitor)
     db.commit()
-    return RedirectResponse("/targets", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse("/monitors", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @dashboard_router.get("/incidents", response_class=HTMLResponse)
 def incidents_page(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
     incidents = db.scalars(
-        select(Incident).options(selectinload(Incident.target)).order_by(desc(Incident.started_at))
+        select(Incident).options(selectinload(Incident.monitor)).order_by(desc(Incident.started_at))
     ).all()
     return templates.TemplateResponse(request=request, name="incidents.html", context={"incidents": incidents})
 
 
 @dashboard_router.get("/incidents/{incident_id}", response_class=HTMLResponse)
-def incident_detail(
+def incident_detail_page(
     request: Request,
     incident_id: int,
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
-    incident = _incident_or_404(db, incident_id)
+    incident = get_incident_or_404(db, incident_id)
     return templates.TemplateResponse(request=request, name="incident_detail.html", context={"incident": incident})
 
 
@@ -185,7 +202,7 @@ def update_incident_form(
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
-    incident = _incident_or_404(db, incident_id)
+    incident = get_incident_or_404(db, incident_id)
     incident.status = status_value
     incident.severity = severity
     incident.notes = notes or None
@@ -197,77 +214,84 @@ def update_incident_form(
     return RedirectResponse(f"/incidents/{incident_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@api_router.get("/targets", response_model=list[TargetRead])
-def list_targets(db: Session = Depends(get_db)):
-    return db.scalars(select(Target).order_by(Target.name)).all()
+@api_router.get("/monitors", response_model=list[MonitorRead])
+def list_monitors(db: Session = Depends(get_db)):
+    return db.scalars(select(Monitor).order_by(Monitor.name)).all()
 
 
-@api_router.post("/targets", response_model=TargetRead, status_code=status.HTTP_201_CREATED)
-def create_target(payload: TargetCreate, db: Session = Depends(get_db), _: None = Depends(require_admin)):
-    target = Target(**payload.model_dump())
-    target.method = target.method.upper()
-    db.add(target)
+@api_router.post("/monitors", response_model=MonitorRead, status_code=status.HTTP_201_CREATED)
+def create_monitor(payload: MonitorCreate, db: Session = Depends(get_db), _: None = Depends(require_admin)):
+    monitor = Monitor(**payload.model_dump())
+    monitor.method = monitor.method.upper()
+    db.add(monitor)
     db.commit()
-    db.refresh(target)
-    return target
+    db.refresh(monitor)
+    return monitor
 
 
-@api_router.get("/targets/{target_id}", response_model=TargetRead)
-def get_target(target_id: int, db: Session = Depends(get_db)):
-    return _target_or_404(db, target_id)
+@api_router.get("/monitors/{monitor_id}", response_model=MonitorRead)
+def get_monitor(monitor_id: int, db: Session = Depends(get_db)):
+    return get_monitor_or_404(db, monitor_id)
 
 
-@api_router.patch("/targets/{target_id}", response_model=TargetRead)
-def update_target(
-    target_id: int,
-    payload: TargetUpdate,
+@api_router.patch("/monitors/{monitor_id}", response_model=MonitorRead)
+def update_monitor(
+    monitor_id: int,
+    payload: MonitorUpdate,
     db: Session = Depends(get_db),
     _: None = Depends(require_admin),
 ):
-    target = _target_or_404(db, target_id)
+    monitor = get_monitor_or_404(db, monitor_id)
     updates = payload.model_dump(exclude_unset=True)
     for field, value in updates.items():
-        setattr(target, field, value.upper() if field == "method" and value else value)
+        setattr(monitor, field, value.upper() if field == "method" and value else value)
     db.commit()
-    db.refresh(target)
-    return target
+    db.refresh(monitor)
+    return monitor
 
 
-@api_router.delete("/targets/{target_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_target(target_id: int, db: Session = Depends(get_db), _: None = Depends(require_admin)):
-    target = _target_or_404(db, target_id)
-    db.delete(target)
+@api_router.delete("/monitors/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_monitor(monitor_id: int, db: Session = Depends(get_db), _: None = Depends(require_admin)):
+    monitor = get_monitor_or_404(db, monitor_id)
+    db.delete(monitor)
     db.commit()
     return None
 
 
-@api_router.post("/targets/{target_id}/check", response_model=CheckRead)
-def run_manual_check(target_id: int, db: Session = Depends(get_db), _: None = Depends(require_admin)):
-    target = _target_or_404(db, target_id)
-    outcome = run_http_check(target)
-    return record_check_and_update_incidents(db, target, outcome)
+@api_router.post("/monitors/{monitor_id}/check", response_model=MonitorCheckRead)
+def run_manual_monitor_check(monitor_id: int, db: Session = Depends(get_db), _: None = Depends(require_admin)):
+    monitor = get_monitor_or_404(db, monitor_id)
+    result = check_monitor_endpoint(monitor)
+    return record_monitor_check_result(db, monitor, result)
 
 
-@api_router.get("/checks", response_model=list[CheckRead])
-def list_checks(
-    target_id: int | None = Query(default=None),
+@api_router.get("/checks", response_model=list[MonitorCheckRead])
+def list_monitor_checks(
+    monitor_id: int | None = Query(default=None),
     success: bool | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
 ):
-    query = select(Check).order_by(desc(Check.checked_at), desc(Check.id)).limit(limit)
-    if target_id is not None:
-        query = query.where(Check.target_id == target_id)
+    query = select(MonitorCheck).order_by(desc(MonitorCheck.checked_at), desc(MonitorCheck.id)).limit(limit)
+    if monitor_id is not None:
+        query = query.where(MonitorCheck.monitor_id == monitor_id)
     if success is not None:
-        query = query.where(Check.success.is_(success))
+        query = query.where(MonitorCheck.success.is_(success))
     return db.scalars(query).all()
 
 
-@api_router.get("/targets/{target_id}/checks", response_model=list[CheckRead])
-def list_target_checks(target_id: int, limit: int = Query(default=100, ge=1, le=500), db: Session = Depends(get_db)):
-    _target_or_404(db, target_id)
+@api_router.get("/monitors/{monitor_id}/checks", response_model=list[MonitorCheckRead])
+def list_checks_for_monitor(
+    monitor_id: int,
+    limit: int = Query(default=100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    get_monitor_or_404(db, monitor_id)
     return db.scalars(
-        select(Check).where(Check.target_id == target_id).order_by(desc(Check.checked_at), desc(Check.id)).limit(limit)
+        select(MonitorCheck)
+        .where(MonitorCheck.monitor_id == monitor_id)
+        .order_by(desc(MonitorCheck.checked_at), desc(MonitorCheck.id))
+        .limit(limit)
     ).all()
 
 
@@ -281,7 +305,7 @@ def list_incidents(status_filter: str | None = Query(default=None, alias="status
 
 @api_router.get("/incidents/{incident_id}", response_model=IncidentRead)
 def get_incident(incident_id: int, db: Session = Depends(get_db)):
-    return _incident_or_404(db, incident_id)
+    return get_incident_or_404(db, incident_id)
 
 
 @api_router.patch("/incidents/{incident_id}", response_model=IncidentRead)
@@ -291,7 +315,7 @@ def update_incident(
     db: Session = Depends(get_db),
     _: None = Depends(require_admin),
 ):
-    incident = _incident_or_404(db, incident_id)
+    incident = get_incident_or_404(db, incident_id)
     updates = payload.model_dump(exclude_unset=True)
     for field, value in updates.items():
         setattr(incident, field, value)
