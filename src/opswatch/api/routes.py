@@ -167,6 +167,41 @@ def create_monitor_form(
     return RedirectResponse("/monitors", status_code=status.HTTP_303_SEE_OTHER)
 
 
+@dashboard_router.post("/monitors/{monitor_id}")
+def update_monitor_form(
+    monitor_id: int,
+    name: str = Form(...),
+    url: str = Form(...),
+    method: str = Form("GET"),
+    expected_status: int = Form(200),
+    expected_body: str = Form(""),
+    interval_seconds: int = Form(60),
+    timeout_seconds: int = Form(5),
+    failure_threshold: int = Form(3),
+    recovery_threshold: int = Form(2),
+    enabled: bool = Form(False),
+    db: Session = Depends(get_db),
+    _: None = Depends(require_dashboard_admin),
+):
+    """Update a monitor from the dashboard form."""
+
+    monitor = get_monitor_or_404(db, monitor_id)
+    monitor.name = name
+    monitor.url = url
+    monitor.method = method.upper()
+    monitor.expected_status = expected_status
+    monitor.expected_body = expected_body or None
+    monitor.interval_seconds = interval_seconds
+    monitor.timeout_seconds = timeout_seconds
+    monitor.failure_threshold = failure_threshold
+    monitor.recovery_threshold = recovery_threshold
+    if monitor.enabled != enabled:
+        monitor.enabled = enabled
+        monitor.status = status_for_enabled_change(enabled, monitor.status)
+    db.commit()
+    return RedirectResponse(f"/monitors/{monitor_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
 @dashboard_router.get("/monitors/{monitor_id}", response_class=HTMLResponse)
 def monitor_detail_page(
     request: Request,

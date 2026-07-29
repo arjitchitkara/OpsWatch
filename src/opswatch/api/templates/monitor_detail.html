@@ -47,6 +47,54 @@
 
 <section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
   <div class="border-b border-ops-line px-5 py-4">
+    <h2 class="text-lg font-semibold">Edit Monitor</h2>
+  </div>
+  <form class="grid gap-5 p-5" action="/monitors/{{ monitor.id }}" method="post">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <label class="grid gap-2 text-sm text-ops-muted">Name
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="name" value="{{ monitor.name }}" required>
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted xl:col-span-2">URL
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="url" value="{{ monitor.url }}" required>
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Method
+        <select class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="method">
+          {% for value in ["GET", "HEAD"] %}
+          <option value="{{ value }}" {% if monitor.method == value %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Expected Status
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_status" type="number" value="{{ monitor.expected_status }}">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Interval Seconds
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="interval_seconds" type="number" value="{{ monitor.interval_seconds }}">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Timeout Seconds
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="timeout_seconds" type="number" value="{{ monitor.timeout_seconds }}">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Failure Threshold
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="failure_threshold" type="number" value="{{ monitor.failure_threshold }}">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Recovery Threshold
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="recovery_threshold" type="number" value="{{ monitor.recovery_threshold }}">
+      </label>
+    </div>
+    <label class="grid gap-2 text-sm text-ops-muted">Expected Body
+      <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_body" value="{{ monitor.expected_body or '' }}" placeholder="optional substring">
+    </label>
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <label class="flex items-center gap-2 text-sm text-ops-muted">
+        <input class="h-4 w-4 accent-ops-green" name="enabled" type="checkbox" value="true" {% if monitor.enabled %}checked{% endif %}>
+        Enabled
+      </label>
+      <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Save Monitor</button>
+    </div>
+  </form>
+</section>
+
+<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
+  <div class="border-b border-ops-line px-5 py-4">
     <h2 class="text-lg font-semibold">Recent Checks</h2>
   </div>
   {% if checks %}

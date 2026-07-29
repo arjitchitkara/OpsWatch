@@ -94,6 +94,75 @@ def test_monitor_crud_with_session_auth(client: TestClient):
     assert deleted.status_code == 204
 
 
+def test_dashboard_can_update_monitor_and_pause_resume(client: TestClient):
+    login(client)
+    created = client.post(
+        "/api/v1/monitors",
+        json={
+            "name": "Demo",
+            "url": "http://example.test",
+            "method": "GET",
+            "expected_status": 200,
+            "interval_seconds": 60,
+            "timeout_seconds": 5,
+            "failure_threshold": 3,
+            "recovery_threshold": 2,
+            "enabled": True,
+        },
+    )
+    monitor_id = created.json()["id"]
+
+    paused = client.post(
+        f"/monitors/{monitor_id}",
+        data={
+            "name": "Updated Demo",
+            "url": "http://example.test/health",
+            "method": "HEAD",
+            "expected_status": 204,
+            "expected_body": "",
+            "interval_seconds": 30,
+            "timeout_seconds": 3,
+            "failure_threshold": 2,
+            "recovery_threshold": 4,
+        },
+        follow_redirects=False,
+    )
+    assert paused.status_code == 303
+
+    paused_payload = client.get(f"/api/v1/monitors/{monitor_id}").json()
+    assert paused_payload["name"] == "Updated Demo"
+    assert paused_payload["method"] == "HEAD"
+    assert paused_payload["expected_status"] == 204
+    assert paused_payload["interval_seconds"] == 30
+    assert paused_payload["timeout_seconds"] == 3
+    assert paused_payload["failure_threshold"] == 2
+    assert paused_payload["recovery_threshold"] == 4
+    assert paused_payload["enabled"] is False
+    assert paused_payload["status"] == "paused"
+
+    resumed = client.post(
+        f"/monitors/{monitor_id}",
+        data={
+            "name": "Updated Demo",
+            "url": "http://example.test/health",
+            "method": "HEAD",
+            "expected_status": 204,
+            "expected_body": "",
+            "interval_seconds": 30,
+            "timeout_seconds": 3,
+            "failure_threshold": 2,
+            "recovery_threshold": 4,
+            "enabled": "true",
+        },
+        follow_redirects=False,
+    )
+    assert resumed.status_code == 303
+
+    resumed_payload = client.get(f"/api/v1/monitors/{monitor_id}").json()
+    assert resumed_payload["enabled"] is True
+    assert resumed_payload["status"] == "unknown"
+
+
 def test_incident_patch_sets_acknowledged_timestamp(client: TestClient):
     login(client)
 

@@ -35,11 +35,18 @@ def run_due_monitor_checks_once() -> None:
     with SessionLocal() as db:
         monitors = db.scalars(select(Monitor).where(Monitor.enabled.is_(True)).order_by(Monitor.id)).all()
         for monitor in monitors:
-            if not monitor_is_due_for_check(db, monitor):
-                continue
-            logger.info("checking monitor id=%s name=%s url=%s", monitor.id, monitor.name, monitor.url)
-            result = check_monitor_endpoint(monitor)
-            record_monitor_check_result(db, monitor, result)
+            check_monitor_if_due(db, monitor)
+
+
+def check_monitor_if_due(db, monitor: Monitor) -> bool:
+    """Check one enabled monitor when it is due."""
+
+    if not monitor.enabled or not monitor_is_due_for_check(db, monitor):
+        return False
+    logger.info("checking monitor id=%s name=%s url=%s", monitor.id, monitor.name, monitor.url)
+    result = check_monitor_endpoint(monitor)
+    record_monitor_check_result(db, monitor, result)
+    return True
 
 
 def main() -> None:

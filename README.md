@@ -4,11 +4,13 @@ OpsWatch is a local-first uptime monitoring and incident response MVP.
 
 It lets an admin create HTTP monitors, run checks, record check results, and track incidents from a small dashboard.
 
-Current version: `0.2.0`
+Current version: `0.3.0`
 
 ## What It Does
 
 - creates HTTP monitors
+- edits monitors from the dashboard
+- pauses and resumes monitors from the dashboard
 - runs scheduled checks in a worker process
 - supports manual checks from the dashboard and JSON API
 - records status code, latency, and error details
@@ -94,6 +96,7 @@ POST /logout
 GET  /monitors
 POST /monitors
 GET  /monitors/{monitor_id}
+POST /monitors/{monitor_id}
 POST /monitors/{monitor_id}/check
 POST /monitors/{monitor_id}/delete
 GET  /incidents
