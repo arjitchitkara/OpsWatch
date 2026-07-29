@@ -1,24 +1,52 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="bg-[#050807]">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}OpsWatch{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ops: {
+                bg: "#050807",
+                panel: "#0e1511",
+                panel2: "#121c16",
+                line: "#203126",
+                green: "#63d471",
+                green2: "#17a34a",
+                muted: "#8fa39a",
+                text: "#e8f1ec",
+                amber: "#f4b740",
+                red: "#ff5c5c"
+              }
+            }
+          }
+        }
+      }
+    </script>
     <link rel="stylesheet" href="/static/styles.css">
   </head>
-  <body>
-    <header class="topbar">
-      <div class="brand">OpsWatch</div>
-      <nav class="nav">
-        <a href="/">Overview</a>
-        <a href="/targets">Targets</a>
-        <a href="/incidents">Incidents</a>
-        <form action="/logout" method="post">
-          <button class="secondary" type="submit">Logout</button>
-        </form>
-      </nav>
+  <body class="min-h-screen bg-ops-bg text-ops-text antialiased">
+    <header class="sticky top-0 z-20 border-b border-ops-line bg-[#07100b]/95 backdrop-blur">
+      <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <a href="/" class="flex items-center gap-3">
+          <span class="h-3 w-3 rounded-full bg-ops-green shadow-[0_0_18px_rgba(99,212,113,0.75)]"></span>
+          <span class="text-lg font-semibold tracking-wide">OpsWatch</span>
+        </a>
+        <nav class="flex items-center gap-2 text-sm">
+          <a class="rounded-md px-3 py-2 text-ops-muted hover:bg-ops-panel2 hover:text-ops-text" href="/">Overview</a>
+          <a class="rounded-md px-3 py-2 text-ops-muted hover:bg-ops-panel2 hover:text-ops-text" href="/monitors">Monitors</a>
+          <a class="rounded-md px-3 py-2 text-ops-muted hover:bg-ops-panel2 hover:text-ops-text" href="/incidents">Incidents</a>
+          <form action="/logout" method="post">
+            <button class="rounded-md border border-ops-line px-3 py-2 text-ops-muted hover:border-ops-green hover:text-ops-green" type="submit">Logout</button>
+          </form>
+        </nav>
+      </div>
     </header>
-    <main class="container">
+    <main class="mx-auto max-w-7xl px-6 py-8">
       {% block content %}{% endblock %}
     </main>
   </body>

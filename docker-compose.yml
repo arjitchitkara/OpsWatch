@@ -30,7 +30,7 @@ services:
   api:
     build: .
     environment:
-      APP_VERSION: ${APP_VERSION:-0.1.0}
+      APP_VERSION: ${APP_VERSION:-0.3.0}
       GIT_SHA: ${GIT_SHA:-local}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}

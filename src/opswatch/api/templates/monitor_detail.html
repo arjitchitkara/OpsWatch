@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% from "macros.html" import check_result_badge, monitor_status_badge %}
+{% block title %}{{ monitor.name }} - OpsWatch{% endblock %}
+{% block content %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <p class="text-sm uppercase tracking-[0.2em] text-ops-green">Monitor Detail</p>
+    <h1 class="mt-2 text-3xl font-semibold">{{ monitor.name }}</h1>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <form action="/monitors/{{ monitor.id }}/check" method="post">
+      <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Run Check</button>
+    </form>
+    <a class="rounded-md border border-ops-line px-4 py-2 text-sm font-semibold text-ops-muted hover:border-ops-green hover:text-ops-green" href="/api/v1/monitors/{{ monitor.id }}/checks">Checks JSON</a>
+  </div>
+</div>
+
+<section class="mb-6 grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Status</div>
+    <div class="mt-3">{{ monitor_status_badge(monitor.status) }}</div>
+  </div>
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">URL</div>
+    <div class="mt-3 break-all text-sm">{{ monitor.url }}</div>
+  </div>
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Expected</div>
+    <div class="mt-3 text-2xl font-semibold">{{ monitor.method }} {{ monitor.expected_status }}</div>
+  </div>
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Schedule</div>
+    <div class="mt-3 text-2xl font-semibold">{{ monitor.interval_seconds }}s</div>
+    <div class="mt-1 text-sm text-ops-muted">fail {{ monitor.failure_threshold }}, recover {{ monitor.recovery_threshold }}</div>
+  </div>
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Last Check</div>
+    <div class="mt-3 text-sm">{{ monitor.last_checked_at or "-" }}</div>
+    <div class="mt-1 text-sm text-ops-muted">{% if monitor.last_response_time_ms is not none %}{{ monitor.last_response_time_ms }} ms{% else %}-{% endif %}</div>
+  </div>
+</section>
+
+<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel p-5">
+  <div class="text-sm text-ops-muted">Last Error</div>
+  <p class="mt-3 text-sm">{{ monitor.last_error_message or monitor.last_error_type or "-" }}</p>
+</section>
+
+<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
+  <div class="border-b border-ops-line px-5 py-4">
+    <h2 class="text-lg font-semibold">Edit Monitor</h2>
+  </div>
+  <form class="grid gap-5 p-5" action="/monitors/{{ monitor.id }}" method="post">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <label class="grid gap-2 text-sm text-ops-muted">Name
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="name" value="{{ monitor.name }}" required>
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted xl:col-span-2">URL
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="url" value="{{ monitor.url }}" required>
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Method
+        <select class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="method">
+          {% for value in ["GET", "HEAD"] %}
+          <option value="{{ value }}" {% if monitor.method == value %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Expected Status
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_status" type="number" value="{{ monitor.expected_status }}">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Interval Seconds
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="interval_seconds" type="number" value="{{ monitor.interval_seconds }}">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Timeout Seconds
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="timeout_seconds" type="number" value="{{ monitor.timeout_seconds }}">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Failure Threshold
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="failure_threshold" type="number" value="{{ monitor.failure_threshold }}">
+      </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Recovery Threshold
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="recovery_threshold" type="number" value="{{ monitor.recovery_threshold }}">
+      </label>
+    </div>
+    <label class="grid gap-2 text-sm text-ops-muted">Expected Body
+      <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_body" value="{{ monitor.expected_body or '' }}" placeholder="optional substring">
+    </label>
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <label class="flex items-center gap-2 text-sm text-ops-muted">
+        <input class="h-4 w-4 accent-ops-green" name="enabled" type="checkbox" value="true" {% if monitor.enabled %}checked{% endif %}>
+        Enabled
+      </label>
+      <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Save Monitor</button>
+    </div>
+  </form>
+</section>
+
+<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
+  <div class="border-b border-ops-line px-5 py-4">
+    <h2 class="text-lg font-semibold">Recent Checks</h2>
+  </div>
+  {% if checks %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
+        <tr><th class="px-5 py-3">Result</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Latency</th><th class="px-5 py-3">Error</th><th class="px-5 py-3">Message</th><th class="px-5 py-3">Checked</th></tr>
+      </thead>
+      <tbody class="divide-y divide-ops-line">
+        {% for check in checks %}
+        <tr class="hover:bg-ops-panel2/70">
+          <td class="px-5 py-4">{{ check_result_badge(check.success) }}</td>
+          <td class="px-5 py-4">{{ check.status_code or "-" }}</td>
+          <td class="px-5 py-4">{% if check.response_time_ms is not none %}{{ check.response_time_ms }} ms{% else %}-{% endif %}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ check.error_type or "-" }}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ check.error_message or "-" }}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ check.checked_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="px-5 py-8 text-sm text-ops-muted">No checks recorded.</p>
+  {% endif %}
+</section>
+
+<section class="rounded-lg border border-ops-line bg-ops-panel">
+  <div class="border-b border-ops-line px-5 py-4">
+    <h2 class="text-lg font-semibold">Incidents</h2>
+  </div>
+  {% if incidents %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
+        <tr><th class="px-5 py-3">Title</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Started</th><th class="px-5 py-3">Resolved</th></tr>
+      </thead>
+      <tbody class="divide-y divide-ops-line">
+        {% for incident in incidents %}
+        <tr class="hover:bg-ops-panel2/70">
+          <td class="px-5 py-4"><a class="text-ops-green hover:underline" href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
+          <td class="px-5 py-4">{{ incident.status }}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ incident.started_at }}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ incident.resolved_at or "-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="px-5 py-8 text-sm text-ops-muted">No incidents for this monitor.</p>
+  {% endif %}
+</section>
+{% endblock %}

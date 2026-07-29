@@ -3,7 +3,9 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class TargetBase(BaseModel):
+class MonitorBase(BaseModel):
+    """Shared fields for monitor API requests and responses."""
+
     name: str = Field(min_length=1, max_length=120)
     url: str = Field(min_length=1, max_length=2048)
     method: str = Field(default="GET", pattern="^(GET|HEAD)$")
@@ -12,14 +14,19 @@ class TargetBase(BaseModel):
     interval_seconds: int = Field(default=60, ge=5, le=86400)
     timeout_seconds: int = Field(default=5, ge=1, le=120)
     failure_threshold: int = Field(default=3, ge=1, le=20)
+    recovery_threshold: int = Field(default=2, ge=1, le=20)
     enabled: bool = True
 
 
-class TargetCreate(TargetBase):
+class MonitorCreate(MonitorBase):
+    """Data required to create a monitor."""
+
     pass
 
 
-class TargetUpdate(BaseModel):
+class MonitorUpdate(BaseModel):
+    """Fields that can be changed on an existing monitor."""
+
     name: str | None = Field(default=None, min_length=1, max_length=120)
     url: str | None = Field(default=None, min_length=1, max_length=2048)
     method: str | None = Field(default=None, pattern="^(GET|HEAD)$")
@@ -28,20 +35,31 @@ class TargetUpdate(BaseModel):
     interval_seconds: int | None = Field(default=None, ge=5, le=86400)
     timeout_seconds: int | None = Field(default=None, ge=1, le=120)
     failure_threshold: int | None = Field(default=None, ge=1, le=20)
+    recovery_threshold: int | None = Field(default=None, ge=1, le=20)
     enabled: bool | None = None
 
 
-class TargetRead(TargetBase):
+class MonitorRead(MonitorBase):
+    """Monitor data returned by the API."""
+
     id: int
+    status: str
+    last_checked_at: datetime | None
+    last_status_code: int | None
+    last_response_time_ms: int | None
+    last_error_type: str | None
+    last_error_message: str | None
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class CheckRead(BaseModel):
+class MonitorCheckRead(BaseModel):
+    """Monitor check data returned by the API."""
+
     id: int
-    target_id: int
+    monitor_id: int
     checked_at: datetime
     success: bool
     status_code: int | None
@@ -53,14 +71,18 @@ class CheckRead(BaseModel):
 
 
 class IncidentUpdate(BaseModel):
+    """Fields that can be changed on an existing incident."""
+
     status: str | None = Field(default=None, pattern="^(open|acknowledged|resolved)$")
     severity: str | None = Field(default=None, pattern="^(info|warning|critical)$")
     notes: str | None = None
 
 
 class IncidentRead(BaseModel):
+    """Incident data returned by the API."""
+
     id: int
-    target_id: int
+    monitor_id: int
     title: str
     severity: str
     status: str

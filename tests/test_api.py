@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from opswatch.api.main import app
 from opswatch.database import get_db
-from opswatch.models import Base, Incident, Target
+from opswatch.models import Base, Incident, Monitor
 
 
 @pytest.fixture
@@ -47,16 +47,16 @@ def test_login_page_renders(client: TestClient):
 
 def test_unauthenticated_mutation_is_rejected(client: TestClient):
     response = client.post(
-        "/api/v1/targets",
+        "/api/v1/monitors",
         json={"name": "Demo", "url": "http://example.test", "method": "GET"},
     )
     assert response.status_code == 401
 
 
-def test_target_crud_with_session_auth(client: TestClient):
+def test_monitor_crud_with_session_auth(client: TestClient):
     login(client)
     created = client.post(
-        "/api/v1/targets",
+        "/api/v1/monitors",
         json={
             "name": "Demo",
             "url": "http://example.test",
@@ -65,33 +65,113 @@ def test_target_crud_with_session_auth(client: TestClient):
             "interval_seconds": 60,
             "timeout_seconds": 5,
             "failure_threshold": 3,
+            "recovery_threshold": 2,
             "enabled": True,
         },
     )
     assert created.status_code == 201
-    target_id = created.json()["id"]
+    created_payload = created.json()
+    monitor_id = created_payload["id"]
+    assert created_payload["status"] == "unknown"
+    assert created_payload["last_checked_at"] is None
+    assert created_payload["recovery_threshold"] == 2
 
-    listed = client.get("/api/v1/targets")
+    listed = client.get("/api/v1/monitors")
     assert listed.status_code == 200
     assert listed.json()[0]["name"] == "Demo"
 
-    patched = client.patch(f"/api/v1/targets/{target_id}", json={"enabled": False})
+    patched = client.patch(f"/api/v1/monitors/{monitor_id}", json={"enabled": False})
     assert patched.status_code == 200
     assert patched.json()["enabled"] is False
+    assert patched.json()["status"] == "paused"
 
-    deleted = client.delete(f"/api/v1/targets/{target_id}")
+    resumed = client.patch(f"/api/v1/monitors/{monitor_id}", json={"enabled": True})
+    assert resumed.status_code == 200
+    assert resumed.json()["enabled"] is True
+    assert resumed.json()["status"] == "unknown"
+
+    deleted = client.delete(f"/api/v1/monitors/{monitor_id}")
     assert deleted.status_code == 204
+
+
+def test_dashboard_can_update_monitor_and_pause_resume(client: TestClient):
+    login(client)
+    created = client.post(
+        "/api/v1/monitors",
+        json={
+            "name": "Demo",
+            "url": "http://example.test",
+            "method": "GET",
+            "expected_status": 200,
+            "interval_seconds": 60,
+            "timeout_seconds": 5,
+            "failure_threshold": 3,
+            "recovery_threshold": 2,
+            "enabled": True,
+        },
+    )
+    monitor_id = created.json()["id"]
+
+    paused = client.post(
+        f"/monitors/{monitor_id}",
+        data={
+            "name": "Updated Demo",
+            "url": "http://example.test/health",
+            "method": "HEAD",
+            "expected_status": 204,
+            "expected_body": "",
+            "interval_seconds": 30,
+            "timeout_seconds": 3,
+            "failure_threshold": 2,
+            "recovery_threshold": 4,
+        },
+        follow_redirects=False,
+    )
+    assert paused.status_code == 303
+
+    paused_payload = client.get(f"/api/v1/monitors/{monitor_id}").json()
+    assert paused_payload["name"] == "Updated Demo"
+    assert paused_payload["method"] == "HEAD"
+    assert paused_payload["expected_status"] == 204
+    assert paused_payload["interval_seconds"] == 30
+    assert paused_payload["timeout_seconds"] == 3
+    assert paused_payload["failure_threshold"] == 2
+    assert paused_payload["recovery_threshold"] == 4
+    assert paused_payload["enabled"] is False
+    assert paused_payload["status"] == "paused"
+
+    resumed = client.post(
+        f"/monitors/{monitor_id}",
+        data={
+            "name": "Updated Demo",
+            "url": "http://example.test/health",
+            "method": "HEAD",
+            "expected_status": 204,
+            "expected_body": "",
+            "interval_seconds": 30,
+            "timeout_seconds": 3,
+            "failure_threshold": 2,
+            "recovery_threshold": 4,
+            "enabled": "true",
+        },
+        follow_redirects=False,
+    )
+    assert resumed.status_code == 303
+
+    resumed_payload = client.get(f"/api/v1/monitors/{monitor_id}").json()
+    assert resumed_payload["enabled"] is True
+    assert resumed_payload["status"] == "unknown"
 
 
 def test_incident_patch_sets_acknowledged_timestamp(client: TestClient):
     login(client)
 
     db: Session = next(app.dependency_overrides[get_db]())
-    target = Target(name="Demo", url="http://example.test", method="GET")
-    db.add(target)
+    monitor = Monitor(name="Demo", url="http://example.test", method="GET")
+    db.add(monitor)
     db.commit()
-    db.refresh(target)
-    incident = Incident(target_id=target.id, title="Demo failing", status="open", severity="warning")
+    db.refresh(monitor)
+    incident = Incident(monitor_id=monitor.id, title="Demo failing", status="open", severity="warning")
     db.add(incident)
     db.commit()
     db.refresh(incident)

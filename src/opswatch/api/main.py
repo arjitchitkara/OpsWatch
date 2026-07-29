@@ -25,15 +25,21 @@ app.include_router(api_router)
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    """Return a basic process health response."""
+
     return {"status": "ok"}
 
 
 @app.get("/ready")
 def ready(db=Depends(get_db)) -> dict[str, str]:
+    """Return ready when the app can query the database."""
+
     db.execute(text("select 1"))
     return {"status": "ready"}
 
 
 @app.get("/version")
 def version() -> dict[str, str]:
+    """Return the app version and git commit value."""
+
     return {"version": settings.app_version, "git_sha": settings.git_sha}

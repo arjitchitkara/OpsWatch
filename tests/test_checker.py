@@ -2,10 +2,10 @@ from types import SimpleNamespace
 
 import httpx
 
-from opswatch.services.checker import run_http_check
+from opswatch.monitoring.http_checks import check_monitor_endpoint
 
 
-def make_target(**overrides):
+def make_monitor(**overrides):
     data = {
         "method": "GET",
         "url": "https://example.test/health",
@@ -23,7 +23,7 @@ def client_for(handler):
 
 def test_successful_check():
     client = client_for(lambda request: httpx.Response(200, text="ok"))
-    result = run_http_check(make_target(expected_body="ok"), client)
+    result = check_monitor_endpoint(make_monitor(expected_body="ok"), client)
     assert result.success is True
     assert result.status_code == 200
     assert result.error_type is None
@@ -31,14 +31,14 @@ def test_successful_check():
 
 def test_unexpected_status():
     client = client_for(lambda request: httpx.Response(500, text="nope"))
-    result = run_http_check(make_target(), client)
+    result = check_monitor_endpoint(make_monitor(), client)
     assert result.success is False
     assert result.error_type == "unexpected_status"
 
 
 def test_expected_body_missing():
     client = client_for(lambda request: httpx.Response(200, text="different"))
-    result = run_http_check(make_target(expected_body="healthy"), client)
+    result = check_monitor_endpoint(make_monitor(expected_body="healthy"), client)
     assert result.success is False
     assert result.error_type == "expected_body_missing"
 
@@ -47,7 +47,7 @@ def test_timeout_error():
     def handler(request):
         raise httpx.TimeoutException("too slow", request=request)
 
-    result = run_http_check(make_target(), client_for(handler))
+    result = check_monitor_endpoint(make_monitor(), client_for(handler))
     assert result.success is False
     assert result.error_type == "timeout"
 
@@ -56,6 +56,6 @@ def test_request_error():
     def handler(request):
         raise httpx.ConnectError("connection refused", request=request)
 
-    result = run_http_check(make_target(), client_for(handler))
+    result = check_monitor_endpoint(make_monitor(), client_for(handler))
     assert result.success is False
     assert result.error_type == "request_error"

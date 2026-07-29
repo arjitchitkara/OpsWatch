@@ -8,38 +8,52 @@ state = {"healthy": True}
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    """Return a healthy response for monitor tests."""
+
     return {"status": "ok", "service": "failure-lab"}
 
 
 @app.head("/health")
 def head_health() -> Response:
+    """Return a healthy HEAD response for monitor tests."""
+
     return Response(status_code=status.HTTP_200_OK)
 
 
 @app.get("/fail")
 def fail() -> Response:
+    """Return a failing response for monitor tests."""
+
     return Response("intentional failure", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @app.get("/wrong-body")
 def wrong_body() -> dict[str, str]:
+    """Return a healthy status with unexpected response text."""
+
     return {"message": "this body does not contain the expected text"}
 
 
 @app.get("/slow")
 async def slow(seconds: int = Query(default=8, ge=1, le=60)) -> dict[str, int | str]:
+    """Return a delayed response for timeout tests."""
+
     await asyncio.sleep(seconds)
     return {"status": "slow", "seconds": seconds}
 
 
 @app.post("/toggle")
 def toggle() -> dict[str, bool]:
+    """Switch the toggle endpoint between healthy and failing."""
+
     state["healthy"] = not state["healthy"]
     return {"healthy": state["healthy"]}
 
 
 @app.get("/toggle")
 def toggle_status() -> Response:
+    """Return the current toggle endpoint status."""
+
     if state["healthy"]:
         return Response("toggle endpoint healthy", status_code=status.HTTP_200_OK)
     return Response("toggle endpoint failing", status_code=status.HTTP_503_SERVICE_UNAVAILABLE)

@@ -1,21 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="bg-[#050807]">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login - OpsWatch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ops: {
+                bg: "#050807",
+                panel: "#0e1511",
+                line: "#203126",
+                green: "#63d471",
+                muted: "#8fa39a",
+                text: "#e8f1ec",
+                red: "#ff5c5c"
+              }
+            }
+          }
+        }
+      }
+    </script>
     <link rel="stylesheet" href="/static/styles.css">
   </head>
-  <body>
-    <main class="login-box card">
-      <h1>OpsWatch</h1>
-      <p class="muted">Local MVP admin login. Default credentials are admin/admin.</p>
-      {% if error %}<p class="danger">{{ error }}</p>{% endif %}
-      <form class="stack" action="/login" method="post">
-        <label>Username <input name="username" value="admin" required></label>
-        <label>Password <input name="password" type="password" required></label>
-        <button type="submit">Login</button>
-      </form>
+  <body class="min-h-screen bg-ops-bg text-ops-text antialiased">
+    <main class="mx-auto grid min-h-screen max-w-md place-items-center px-6">
+      <section class="w-full rounded-lg border border-ops-line bg-ops-panel p-6 shadow-2xl shadow-black/40">
+        <div class="mb-6 flex items-center gap-3">
+          <span class="h-3 w-3 rounded-full bg-ops-green shadow-[0_0_18px_rgba(99,212,113,0.75)]"></span>
+          <h1 class="text-2xl font-semibold">OpsWatch</h1>
+        </div>
+        <p class="mb-6 text-sm text-ops-muted">Local MVP admin login. Default credentials are admin/admin.</p>
+        {% if error %}<p class="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-ops-red">{{ error }}</p>{% endif %}
+        <form class="grid gap-4" action="/login" method="post">
+          <label class="grid gap-2 text-sm text-ops-muted">Username
+            <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="username" value="admin" required>
+          </label>
+          <label class="grid gap-2 text-sm text-ops-muted">Password
+            <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="password" type="password" required>
+          </label>
+          <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Login</button>
+        </form>
+      </section>
     </main>
   </body>
 </html>
