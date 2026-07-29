@@ -29,7 +29,14 @@ class Monitor(Base):
     interval_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=60)
     timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
     failure_threshold: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    recovery_threshold: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default="unknown")
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_response_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_error_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    last_error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

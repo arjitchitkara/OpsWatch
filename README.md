@@ -4,7 +4,7 @@ OpsWatch is a local-first uptime monitoring and incident response MVP.
 
 It lets an admin create HTTP monitors, run checks, record check results, and track incidents from a small dashboard.
 
-Current version: `0.1.1`
+Current version: `0.2.0`
 
 ## What It Does
 
@@ -12,8 +12,9 @@ Current version: `0.1.1`
 - runs scheduled checks in a worker process
 - supports manual checks from the dashboard and JSON API
 - records status code, latency, and error details
+- stores current monitor state on each monitor
 - opens an incident after repeated failures
-- resolves an open incident after a successful check
+- resolves an open incident after enough successful checks
 - shows monitors, checks, and incidents in a dark Tailwind dashboard
 
 ## Architecture
@@ -38,6 +39,36 @@ FastAPI and worker
 Worker
   -> httpx
   -> monitored URLs
+```
+
+## Data Model
+
+```text
+Monitor
+  stores configuration and current state
+
+MonitorCheck
+  stores check history
+
+Incident
+  stores a period where a monitor is failing or needs attention
+```
+
+Monitor state values:
+
+```text
+unknown   no check has confirmed the current state
+healthy   the monitor is passing checks
+degraded  the monitor has failures but is not confirmed down, or is recovering
+down      the monitor reached its failure threshold
+paused    the monitor is disabled
+```
+
+Threshold fields:
+
+```text
+failure_threshold   failed checks needed to mark a monitor down
+recovery_threshold  successful checks needed to resolve an incident
 ```
 
 ## Services
@@ -179,5 +210,6 @@ Code should use plain names that match the product:
 - `Incident`: a period where a monitor is failing or needs attention
 - `check_monitor_endpoint`: sends one HTTP request for a monitor
 - `record_monitor_check_result`: saves the result and updates incidents
+- `recovery_threshold`: successful checks needed to recover
 
 Docstrings should be short, direct, and accurate.

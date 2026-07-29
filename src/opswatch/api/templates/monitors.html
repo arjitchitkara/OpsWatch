@@ -36,6 +36,9 @@
       <label class="grid gap-2 text-sm text-ops-muted">Failure Threshold
         <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="failure_threshold" type="number" value="3">
       </label>
+      <label class="grid gap-2 text-sm text-ops-muted">Recovery Threshold
+        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="recovery_threshold" type="number" value="2">
+      </label>
     </div>
     <label class="grid gap-2 text-sm text-ops-muted">Expected Body
       <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_body" placeholder="optional substring">
@@ -58,22 +61,28 @@
   <div class="overflow-x-auto">
     <table class="w-full text-left text-sm">
       <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
-        <tr><th class="px-5 py-3">Name</th><th class="px-5 py-3">URL</th><th class="px-5 py-3">Method</th><th class="px-5 py-3">Interval</th><th class="px-5 py-3">Enabled</th><th class="px-5 py-3"></th></tr>
+        <tr><th class="px-5 py-3">Name</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">URL</th><th class="px-5 py-3">Interval</th><th class="px-5 py-3">Last checked</th><th class="px-5 py-3">Latency</th><th class="px-5 py-3">Last error</th><th class="px-5 py-3"></th></tr>
       </thead>
       <tbody class="divide-y divide-ops-line">
         {% for monitor in monitors %}
         <tr class="hover:bg-ops-panel2/70">
           <td class="px-5 py-4 font-medium"><a class="text-ops-green hover:underline" href="/monitors/{{ monitor.id }}">{{ monitor.name }}</a></td>
-          <td class="max-w-xl truncate px-5 py-4 text-ops-muted">{{ monitor.url }}</td>
-          <td class="px-5 py-4">{{ monitor.method }}</td>
-          <td class="px-5 py-4">{{ monitor.interval_seconds }}s</td>
           <td class="px-5 py-4">
-            {% if monitor.enabled %}
-            <span class="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-ops-green">enabled</span>
+            {% if monitor.status == "healthy" %}
+            <span class="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-ops-green">{{ monitor.status }}</span>
+            {% elif monitor.status == "down" %}
+            <span class="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-ops-red">{{ monitor.status }}</span>
+            {% elif monitor.status == "degraded" %}
+            <span class="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-ops-amber">{{ monitor.status }}</span>
             {% else %}
-            <span class="rounded-full bg-slate-500/20 px-2.5 py-1 text-xs font-semibold text-slate-300">paused</span>
+            <span class="rounded-full bg-slate-500/20 px-2.5 py-1 text-xs font-semibold text-slate-300">{{ monitor.status }}</span>
             {% endif %}
           </td>
+          <td class="max-w-xl truncate px-5 py-4 text-ops-muted">{{ monitor.url }}</td>
+          <td class="px-5 py-4">{{ monitor.interval_seconds }}s</td>
+          <td class="px-5 py-4 text-ops-muted">{{ monitor.last_checked_at or "-" }}</td>
+          <td class="px-5 py-4">{% if monitor.last_response_time_ms is not none %}{{ monitor.last_response_time_ms }} ms{% else %}-{% endif %}</td>
+          <td class="px-5 py-4 text-ops-muted">{{ monitor.last_error_type or "-" }}</td>
           <td class="px-5 py-4 text-right">
             <form action="/monitors/{{ monitor.id }}/delete" method="post">
               <button class="rounded-md border border-red-500/40 px-3 py-1.5 text-xs font-semibold text-ops-red hover:bg-red-500/10" type="submit">Delete</button>

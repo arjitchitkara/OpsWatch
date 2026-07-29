@@ -27,6 +27,16 @@ dashboard_router = APIRouter()
 api_router = APIRouter(prefix="/api/v1")
 
 
+def status_for_enabled_change(enabled: bool, current_status: str | None = None) -> str:
+    """Return the monitor status after an enabled value change."""
+
+    if not enabled:
+        return "paused"
+    if current_status == "paused":
+        return "unknown"
+    return current_status or "unknown"
+
+
 def get_monitor_or_404(db: Session, monitor_id: int) -> Monitor:
     """Return a monitor or raise a 404 error."""
 
@@ -81,6 +91,13 @@ def overview_page(request: Request, db: Session = Depends(get_db), _: None = Dep
     """Render the dashboard overview page."""
 
     monitors = db.scalars(select(Monitor).order_by(Monitor.name)).all()
+    monitor_status_counts = {
+        "healthy": sum(monitor.status == "healthy" for monitor in monitors),
+        "degraded": sum(monitor.status == "degraded" for monitor in monitors),
+        "down": sum(monitor.status == "down" for monitor in monitors),
+        "paused": sum(monitor.status == "paused" for monitor in monitors),
+        "unknown": sum(monitor.status == "unknown" for monitor in monitors),
+    }
     open_incidents = db.scalars(
         select(Incident)
         .options(selectinload(Incident.monitor))
@@ -98,6 +115,7 @@ def overview_page(request: Request, db: Session = Depends(get_db), _: None = Dep
         name="overview.html",
         context={
             "monitors": monitors,
+            "monitor_status_counts": monitor_status_counts,
             "open_incidents": open_incidents,
             "recent_checks": recent_checks,
             "authenticated": is_authenticated(request),
@@ -124,6 +142,7 @@ def create_monitor_form(
     interval_seconds: int = Form(60),
     timeout_seconds: int = Form(5),
     failure_threshold: int = Form(3),
+    recovery_threshold: int = Form(2),
     enabled: bool = Form(False),
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
@@ -139,7 +158,9 @@ def create_monitor_form(
         interval_seconds=interval_seconds,
         timeout_seconds=timeout_seconds,
         failure_threshold=failure_threshold,
+        recovery_threshold=recovery_threshold,
         enabled=enabled,
+        status=status_for_enabled_change(enabled),
     )
     db.add(monitor)
     db.commit()
@@ -255,6 +276,7 @@ def create_monitor(payload: MonitorCreate, db: Session = Depends(get_db), _: Non
 
     monitor = Monitor(**payload.model_dump())
     monitor.method = monitor.method.upper()
+    monitor.status = status_for_enabled_change(monitor.enabled)
     db.add(monitor)
     db.commit()
     db.refresh(monitor)
@@ -281,6 +303,8 @@ def update_monitor(
     updates = payload.model_dump(exclude_unset=True)
     for field, value in updates.items():
         setattr(monitor, field, value.upper() if field == "method" and value else value)
+    if "enabled" in updates:
+        monitor.status = status_for_enabled_change(monitor.enabled, monitor.status)
     db.commit()
     db.refresh(monitor)
     return monitor

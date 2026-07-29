@@ -14,6 +14,7 @@ class MonitorBase(BaseModel):
     interval_seconds: int = Field(default=60, ge=5, le=86400)
     timeout_seconds: int = Field(default=5, ge=1, le=120)
     failure_threshold: int = Field(default=3, ge=1, le=20)
+    recovery_threshold: int = Field(default=2, ge=1, le=20)
     enabled: bool = True
 
 
@@ -34,6 +35,7 @@ class MonitorUpdate(BaseModel):
     interval_seconds: int | None = Field(default=None, ge=5, le=86400)
     timeout_seconds: int | None = Field(default=None, ge=1, le=120)
     failure_threshold: int | None = Field(default=None, ge=1, le=20)
+    recovery_threshold: int | None = Field(default=None, ge=1, le=20)
     enabled: bool | None = None
 
 
@@ -41,6 +43,12 @@ class MonitorRead(MonitorBase):
     """Monitor data returned by the API."""
 
     id: int
+    status: str
+    last_checked_at: datetime | None
+    last_status_code: int | None
+    last_response_time_ms: int | None
+    last_error_type: str | None
+    last_error_message: str | None
     created_at: datetime
     updated_at: datetime
 

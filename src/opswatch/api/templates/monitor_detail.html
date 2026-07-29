@@ -14,7 +14,21 @@
   </div>
 </div>
 
-<section class="mb-6 grid gap-4 md:grid-cols-3">
+<section class="mb-6 grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Status</div>
+    <div class="mt-3">
+      {% if monitor.status == "healthy" %}
+      <span class="rounded-full bg-green-500/15 px-2.5 py-1 text-sm font-semibold text-ops-green">{{ monitor.status }}</span>
+      {% elif monitor.status == "down" %}
+      <span class="rounded-full bg-red-500/15 px-2.5 py-1 text-sm font-semibold text-ops-red">{{ monitor.status }}</span>
+      {% elif monitor.status == "degraded" %}
+      <span class="rounded-full bg-amber-500/15 px-2.5 py-1 text-sm font-semibold text-ops-amber">{{ monitor.status }}</span>
+      {% else %}
+      <span class="rounded-full bg-slate-500/20 px-2.5 py-1 text-sm font-semibold text-slate-300">{{ monitor.status }}</span>
+      {% endif %}
+    </div>
+  </div>
   <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
     <div class="text-sm text-ops-muted">URL</div>
     <div class="mt-3 break-all text-sm">{{ monitor.url }}</div>
@@ -26,8 +40,18 @@
   <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
     <div class="text-sm text-ops-muted">Schedule</div>
     <div class="mt-3 text-2xl font-semibold">{{ monitor.interval_seconds }}s</div>
-    <div class="mt-1 text-sm text-ops-muted">threshold {{ monitor.failure_threshold }}</div>
+    <div class="mt-1 text-sm text-ops-muted">fail {{ monitor.failure_threshold }}, recover {{ monitor.recovery_threshold }}</div>
   </div>
+  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
+    <div class="text-sm text-ops-muted">Last Check</div>
+    <div class="mt-3 text-sm">{{ monitor.last_checked_at or "-" }}</div>
+    <div class="mt-1 text-sm text-ops-muted">{% if monitor.last_response_time_ms is not none %}{{ monitor.last_response_time_ms }} ms{% else %}-{% endif %}</div>
+  </div>
+</section>
+
+<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel p-5">
+  <div class="text-sm text-ops-muted">Last Error</div>
+  <p class="mt-3 text-sm">{{ monitor.last_error_message or monitor.last_error_type or "-" }}</p>
 </section>
 
 <section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
@@ -51,7 +75,7 @@
             {% endif %}
           </td>
           <td class="px-5 py-4">{{ check.status_code or "-" }}</td>
-          <td class="px-5 py-4">{{ check.response_time_ms or "-" }} ms</td>
+          <td class="px-5 py-4">{% if check.response_time_ms is not none %}{{ check.response_time_ms }} ms{% else %}-{% endif %}</td>
           <td class="px-5 py-4 text-ops-muted">{{ check.error_type or "-" }}</td>
           <td class="px-5 py-4 text-ops-muted">{{ check.error_message or "-" }}</td>
           <td class="px-5 py-4 text-ops-muted">{{ check.checked_at }}</td>
