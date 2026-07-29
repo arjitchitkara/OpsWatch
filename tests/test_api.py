@@ -65,11 +65,16 @@ def test_monitor_crud_with_session_auth(client: TestClient):
             "interval_seconds": 60,
             "timeout_seconds": 5,
             "failure_threshold": 3,
+            "recovery_threshold": 2,
             "enabled": True,
         },
     )
     assert created.status_code == 201
-    monitor_id = created.json()["id"]
+    created_payload = created.json()
+    monitor_id = created_payload["id"]
+    assert created_payload["status"] == "unknown"
+    assert created_payload["last_checked_at"] is None
+    assert created_payload["recovery_threshold"] == 2
 
     listed = client.get("/api/v1/monitors")
     assert listed.status_code == 200
@@ -78,6 +83,12 @@ def test_monitor_crud_with_session_auth(client: TestClient):
     patched = client.patch(f"/api/v1/monitors/{monitor_id}", json={"enabled": False})
     assert patched.status_code == 200
     assert patched.json()["enabled"] is False
+    assert patched.json()["status"] == "paused"
+
+    resumed = client.patch(f"/api/v1/monitors/{monitor_id}", json={"enabled": True})
+    assert resumed.status_code == 200
+    assert resumed.json()["enabled"] is True
+    assert resumed.json()["status"] == "unknown"
 
     deleted = client.delete(f"/api/v1/monitors/{monitor_id}")
     assert deleted.status_code == 204

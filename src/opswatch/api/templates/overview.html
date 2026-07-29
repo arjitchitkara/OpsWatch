@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros.html" import check_result_badge, monitor_status_badge %}
 {% block title %}Overview - OpsWatch{% endblock %}
 {% block content %}
 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -50,17 +51,7 @@
         {% for monitor in monitors %}
         <tr class="hover:bg-ops-panel2/70">
           <td class="px-5 py-4"><a class="text-ops-green hover:underline" href="/monitors/{{ monitor.id }}">{{ monitor.name }}</a></td>
-          <td class="px-5 py-4">
-            {% if monitor.status == "healthy" %}
-            <span class="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-ops-green">{{ monitor.status }}</span>
-            {% elif monitor.status == "down" %}
-            <span class="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-ops-red">{{ monitor.status }}</span>
-            {% elif monitor.status == "degraded" %}
-            <span class="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-ops-amber">{{ monitor.status }}</span>
-            {% else %}
-            <span class="rounded-full bg-slate-500/20 px-2.5 py-1 text-xs font-semibold text-slate-300">{{ monitor.status }}</span>
-            {% endif %}
-          </td>
+          <td class="px-5 py-4">{{ monitor_status_badge(monitor.status) }}</td>
           <td class="px-5 py-4 text-ops-muted">{{ monitor.last_checked_at or "-" }}</td>
           <td class="px-5 py-4">{% if monitor.last_response_time_ms is not none %}{{ monitor.last_response_time_ms }} ms{% else %}-{% endif %}</td>
           <td class="px-5 py-4 text-ops-muted">{{ monitor.last_error_type or "-" }}</td>
@@ -115,13 +106,7 @@
         {% for check in recent_checks %}
         <tr class="hover:bg-ops-panel2/70">
           <td class="px-5 py-4">{{ check.monitor.name }}</td>
-          <td class="px-5 py-4">
-            {% if check.success %}
-            <span class="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-ops-green">success</span>
-            {% else %}
-            <span class="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-ops-red">failed</span>
-            {% endif %}
-          </td>
+          <td class="px-5 py-4">{{ check_result_badge(check.success) }}</td>
           <td class="px-5 py-4">{{ check.status_code or "-" }}</td>
           <td class="px-5 py-4">{% if check.response_time_ms is not none %}{{ check.response_time_ms }} ms{% else %}-{% endif %}</td>
           <td class="px-5 py-4 text-ops-muted">{{ check.error_type or "-" }}</td>

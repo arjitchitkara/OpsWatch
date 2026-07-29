@@ -1,0 +1,19 @@
+{% macro monitor_status_badge(status) -%}
+  {% if status == "healthy" %}
+  <span class="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-ops-green">{{ status }}</span>
+  {% elif status == "down" %}
+  <span class="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-ops-red">{{ status }}</span>
+  {% elif status == "degraded" %}
+  <span class="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-ops-amber">{{ status }}</span>
+  {% else %}
+  <span class="rounded-full bg-slate-500/20 px-2.5 py-1 text-xs font-semibold text-slate-300">{{ status }}</span>
+  {% endif %}
+{%- endmacro %}
+
+{% macro check_result_badge(success) -%}
+  {% if success %}
+  <span class="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-ops-green">success</span>
+  {% else %}
+  <span class="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-ops-red">failed</span>
+  {% endif %}
+{%- endmacro %}
