@@ -1,7 +1,7 @@
 # Project metadata and dependency declarations for the Python package
 [project]
 name = "opswatch"  # package name used for distribution and installation
-version = "0.3.0"  # package version following semantic versioning
+version = "0.3.1"  # package version following semantic versioning
 description = "Local-first uptime monitoring and incident response MVP."  # short project summary
 requires-python = ">=3.12"  # minimum Python version required to run this package
 dependencies = [

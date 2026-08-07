@@ -1,10 +1,16 @@
 .git
+.gitignore
 .venv
 __pycache__
 .pytest_cache
 .ruff_cache
+.mypy_cache
+.coverage
 *.pyc
 .env
+.env.*
+!.env.example
 htmlcov
 dist
 build
+node_modules

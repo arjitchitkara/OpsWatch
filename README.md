@@ -4,7 +4,7 @@ OpsWatch is a local-first uptime monitoring and incident response MVP.
 
 It lets an admin create HTTP monitors, run checks, record check results, and track incidents from a small dashboard.
 
-Current version: `0.3.0`
+Current version: `0.3.1`
 
 ## What It Does
 
@@ -83,6 +83,19 @@ The Docker Compose stack runs:
 - `postgres`: PostgreSQL database
 - `pgbouncer`: database connection pooler
 - `failure-lab`: local test service with healthy, failing, slow, and toggle routes
+
+## Container Runtime
+
+The Python containers are built to be closer to a production runtime:
+
+- the app runs as a non-root `opswatch` user
+- API, worker, failure lab, Nginx, PgBouncer, and PostgreSQL have healthchecks
+- worker startup waits for the API to become healthy
+- Nginx waits for the API and failure lab to become healthy
+- API, worker, and failure lab use a read-only container filesystem
+- API, worker, and failure lab drop Linux capabilities
+- API, worker, and failure lab use `no-new-privileges`
+- services restart with `unless-stopped`
 
 ## Dashboard Routes
 
