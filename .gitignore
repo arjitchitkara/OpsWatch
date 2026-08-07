@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 todo.txt
+observabilityInApp.txt
 # C extensions
 *.so
 
