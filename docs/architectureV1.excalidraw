@@ -22,11 +22,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 101,
-      "version": 1,
-      "versionNonce": 101,
+      "version": 2,
+      "versionNonce": 1248098484,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "OpsWatch Architecture",
@@ -37,7 +37,9 @@
       "containerId": null,
       "originalText": "OpsWatch Architecture",
       "lineHeight": 1.25,
-      "baseline": 26
+      "baseline": 26,
+      "index": "a0",
+      "autoResize": true
     },
     {
       "id": "subtitle_scope",
@@ -58,11 +60,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 102,
-      "version": 1,
-      "versionNonce": 102,
+      "version": 2,
+      "versionNonce": 1455660172,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "Current system through v0.3.0: dashboard, JSON API, worker, database, monitor state, and incidents.",
@@ -73,7 +75,9 @@
       "containerId": null,
       "originalText": "Current system through v0.3.0: dashboard, JSON API, worker, database, monitor state, and incidents.",
       "lineHeight": 1.25,
-      "baseline": 18
+      "baseline": 18,
+      "index": "a1",
+      "autoResize": true
     },
     {
       "id": "browser_box",
@@ -92,15 +96,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 201,
-      "version": 1,
-      "versionNonce": 201,
+      "version": 2,
+      "versionNonce": 507200052,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "a2"
     },
     {
       "id": "browser_text",
@@ -121,11 +128,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 202,
-      "version": 1,
-      "versionNonce": 202,
+      "version": 2,
+      "versionNonce": 1740122892,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "Browser\nDashboard UI",
@@ -136,7 +143,9 @@
       "containerId": null,
       "originalText": "Browser\nDashboard UI",
       "lineHeight": 1.25,
-      "baseline": 38
+      "baseline": 38,
+      "index": "a3",
+      "autoResize": true
     },
     {
       "id": "json_client_box",
@@ -155,15 +164,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 203,
-      "version": 1,
-      "versionNonce": 203,
+      "version": 2,
+      "versionNonce": 796711860,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "a4"
     },
     {
       "id": "json_client_text",
@@ -184,11 +196,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 204,
-      "version": 1,
-      "versionNonce": 204,
+      "version": 2,
+      "versionNonce": 941025676,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "JSON Client\n/api/v1",
@@ -199,7 +211,9 @@
       "containerId": null,
       "originalText": "JSON Client\n/api/v1",
       "lineHeight": 1.25,
-      "baseline": 38
+      "baseline": 38,
+      "index": "a5",
+      "autoResize": true
     },
     {
       "id": "nginx_box",
@@ -218,15 +232,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 205,
-      "version": 1,
-      "versionNonce": 205,
+      "version": 2,
+      "versionNonce": 676283700,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "a6"
     },
     {
       "id": "nginx_text",
@@ -247,11 +264,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 206,
-      "version": 1,
-      "versionNonce": 206,
+      "version": 2,
+      "versionNonce": 991549452,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "Nginx\nfront door",
@@ -262,7 +279,9 @@
       "containerId": null,
       "originalText": "Nginx\nfront door",
       "lineHeight": 1.25,
-      "baseline": 38
+      "baseline": 38,
+      "index": "a7",
+      "autoResize": true
     },
     {
       "id": "fastapi_box",
@@ -281,15 +300,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 207,
-      "version": 1,
-      "versionNonce": 207,
+      "version": 2,
+      "versionNonce": 2115534516,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "a8"
     },
     {
       "id": "fastapi_text",
@@ -310,11 +332,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 208,
-      "version": 1,
-      "versionNonce": 208,
+      "version": 2,
+      "versionNonce": 1824192140,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "FastAPI App\n\nDashboard routes\nJSON API routes\nAuth/session",
@@ -325,7 +347,9 @@
       "containerId": null,
       "originalText": "FastAPI App\n\nDashboard routes\nJSON API routes\nAuth/session",
       "lineHeight": 1.25,
-      "baseline": 82
+      "baseline": 82,
+      "index": "a9",
+      "autoResize": true
     },
     {
       "id": "jinja_box",
@@ -344,15 +368,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 209,
-      "version": 1,
-      "versionNonce": 209,
+      "version": 2,
+      "versionNonce": 159287348,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "aA"
     },
     {
       "id": "jinja_text",
@@ -373,11 +400,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 210,
-      "version": 1,
-      "versionNonce": 210,
+      "version": 2,
+      "versionNonce": 968115468,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "Jinja + Tailwind\nHTML pages",
@@ -388,7 +415,9 @@
       "containerId": null,
       "originalText": "Jinja + Tailwind\nHTML pages",
       "lineHeight": 1.25,
-      "baseline": 38
+      "baseline": 38,
+      "index": "aB",
+      "autoResize": true
     },
     {
       "id": "sqlalchemy_box",
@@ -407,15 +436,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 211,
-      "version": 1,
-      "versionNonce": 211,
+      "version": 2,
+      "versionNonce": 510091700,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "aC"
     },
     {
       "id": "sqlalchemy_text",
@@ -436,11 +468,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 212,
-      "version": 1,
-      "versionNonce": 212,
+      "version": 2,
+      "versionNonce": 1736426380,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "SQLAlchemy\nPython objects",
@@ -451,7 +483,9 @@
       "containerId": null,
       "originalText": "SQLAlchemy\nPython objects",
       "lineHeight": 1.25,
-      "baseline": 38
+      "baseline": 38,
+      "index": "aD",
+      "autoResize": true
     },
     {
       "id": "pgbouncer_box",
@@ -470,15 +504,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 213,
-      "version": 1,
-      "versionNonce": 213,
+      "version": 2,
+      "versionNonce": 603523892,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "aE"
     },
     {
       "id": "pgbouncer_text",
@@ -499,11 +536,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 214,
-      "version": 1,
-      "versionNonce": 214,
+      "version": 2,
+      "versionNonce": 2086105612,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "PgBouncer\nconnection pool",
@@ -514,7 +551,9 @@
       "containerId": null,
       "originalText": "PgBouncer\nconnection pool",
       "lineHeight": 1.25,
-      "baseline": 38
+      "baseline": 38,
+      "index": "aF",
+      "autoResize": true
     },
     {
       "id": "postgres_box",
@@ -533,15 +572,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 215,
-      "version": 1,
-      "versionNonce": 215,
+      "version": 2,
+      "versionNonce": 748258484,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "aG"
     },
     {
       "id": "postgres_text",
@@ -562,11 +604,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 216,
-      "version": 1,
-      "versionNonce": 216,
+      "version": 2,
+      "versionNonce": 657805452,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "PostgreSQL\n\nmonitors\nmonitor_checks\nincidents\nalembic_version",
@@ -577,7 +619,9 @@
       "containerId": null,
       "originalText": "PostgreSQL\n\nmonitors\nmonitor_checks\nincidents\nalembic_version",
       "lineHeight": 1.25,
-      "baseline": 146
+      "baseline": 146,
+      "index": "aH",
+      "autoResize": true
     },
     {
       "id": "worker_box",
@@ -596,15 +640,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 217,
-      "version": 1,
-      "versionNonce": 217,
+      "version": 2,
+      "versionNonce": 233754164,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "aI"
     },
     {
       "id": "worker_text",
@@ -625,11 +672,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 218,
-      "version": 1,
-      "versionNonce": 218,
+      "version": 2,
+      "versionNonce": 668163852,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "Worker\n\nloads enabled monitors\nchecks due monitors",
@@ -640,7 +687,9 @@
       "containerId": null,
       "originalText": "Worker\n\nloads enabled monitors\nchecks due monitors",
       "lineHeight": 1.25,
-      "baseline": 74
+      "baseline": 74,
+      "index": "aJ",
+      "autoResize": true
     },
     {
       "id": "httpx_box",
@@ -659,15 +708,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 219,
-      "version": 1,
-      "versionNonce": 219,
+      "version": 2,
+      "versionNonce": 2027874228,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "aK"
     },
     {
       "id": "httpx_text",
@@ -688,11 +740,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 220,
-      "version": 1,
-      "versionNonce": 220,
+      "version": 2,
+      "versionNonce": 917216652,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "httpx\nHTTP client",
@@ -703,7 +755,9 @@
       "containerId": null,
       "originalText": "httpx\nHTTP client",
       "lineHeight": 1.25,
-      "baseline": 38
+      "baseline": 38,
+      "index": "aL",
+      "autoResize": true
     },
     {
       "id": "monitored_urls_box",
@@ -722,15 +776,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 221,
-      "version": 1,
-      "versionNonce": 221,
+      "version": 2,
+      "versionNonce": 294637876,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "aM"
     },
     {
       "id": "monitored_urls_text",
@@ -751,11 +808,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 222,
-      "version": 1,
-      "versionNonce": 222,
+      "version": 2,
+      "versionNonce": 1828195340,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "Monitored URLs\nreal services",
@@ -766,7 +823,9 @@
       "containerId": null,
       "originalText": "Monitored URLs\nreal services",
       "lineHeight": 1.25,
-      "baseline": 38
+      "baseline": 38,
+      "index": "aN",
+      "autoResize": true
     },
     {
       "id": "lifecycle_box",
@@ -785,15 +844,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 223,
-      "version": 1,
-      "versionNonce": 223,
+      "version": 2,
+      "versionNonce": 124226228,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "aO"
     },
     {
       "id": "lifecycle_text",
@@ -814,11 +876,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 224,
-      "version": 1,
-      "versionNonce": 224,
+      "version": 2,
+      "versionNonce": 749906572,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "Incident lifecycle\n\nsave check\nupdate monitor state\nopen or resolve incident",
@@ -829,7 +891,9 @@
       "containerId": null,
       "originalText": "Incident lifecycle\n\nsave check\nupdate monitor state\nopen or resolve incident",
       "lineHeight": 1.25,
-      "baseline": 94
+      "baseline": 94,
+      "index": "aP",
+      "autoResize": true
     },
     {
       "id": "states_box",
@@ -848,15 +912,18 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 225,
-      "version": 1,
-      "versionNonce": 225,
+      "version": 2,
+      "versionNonce": 755766324,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "aQ"
     },
     {
       "id": "states_text",
@@ -877,11 +944,11 @@
       "frameId": null,
       "roundness": null,
       "seed": 226,
-      "version": 1,
-      "versionNonce": 226,
+      "version": 2,
+      "versionNonce": 144013580,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
       "text": "Monitor states\nunknown = no confirmed check yet    healthy = passing    degraded = failing or recovering    down = failure threshold reached    paused = disabled",
@@ -892,7 +959,9 @@
       "containerId": null,
       "originalText": "Monitor states\nunknown = no confirmed check yet    healthy = passing    degraded = failing or recovering    down = failure threshold reached    paused = disabled",
       "lineHeight": 1.25,
-      "baseline": 78
+      "baseline": 78,
+      "index": "aR",
+      "autoResize": true
     },
     {
       "id": "version_box",
@@ -911,23 +980,26 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 227,
-      "version": 1,
-      "versionNonce": 227,
+      "version": 2,
+      "versionNonce": 274951604,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
-      "locked": false
+      "locked": false,
+      "index": "aS"
     },
     {
       "id": "version_text",
       "type": "text",
       "x": 905,
       "y": 746,
-      "width": 610,
-      "height": 75,
+      "width": 628.8185184546134,
+      "height": 67.5,
       "angle": 0,
       "strokeColor": "#e8f1ec",
       "backgroundColor": "transparent",
@@ -940,14 +1012,14 @@
       "frameId": null,
       "roundness": null,
       "seed": 228,
-      "version": 1,
-      "versionNonce": 228,
+      "version": 25,
+      "versionNonce": 598557941,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1786146013563,
       "link": null,
       "locked": false,
-      "text": "Built so far\nv0.1 core flow    v0.2 monitor state    v0.2.1 tests + UI macros    v0.3 edit, pause, resume",
+      "text": "Built so far\nv0.1 core flow    v0.2 monitor state    v0.2.1 tests + UI macros\nv0.3 edit, pause, resume",
       "fontSize": 18,
       "fontFamily": 1,
       "textAlign": "center",
@@ -955,7 +1027,9 @@
       "containerId": null,
       "originalText": "Built so far\nv0.1 core flow    v0.2 monitor state    v0.2.1 tests + UI macros    v0.3 edit, pause, resume",
       "lineHeight": 1.25,
-      "baseline": 74
+      "baseline": 74,
+      "index": "aT",
+      "autoResize": false
     },
     {
       "id": "browser_to_nginx",
@@ -974,21 +1048,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 301,
-      "version": 1,
-      "versionNonce": 301,
+      "version": 2,
+      "versionNonce": 311662388,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [64, 45]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          64,
+          45
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "aU"
     },
     {
       "id": "json_to_nginx",
@@ -996,7 +1082,7 @@
       "x": 232,
       "y": 310,
       "width": 64,
-      "height": -45,
+      "height": 45,
       "angle": 0,
       "strokeColor": "#63d471",
       "backgroundColor": "transparent",
@@ -1007,21 +1093,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 302,
-      "version": 1,
-      "versionNonce": 302,
+      "version": 2,
+      "versionNonce": 1132176908,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [64, -45]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          64,
+          -45
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "aV"
     },
     {
       "id": "nginx_to_fastapi",
@@ -1040,21 +1138,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 303,
-      "version": 1,
-      "versionNonce": 303,
+      "version": 2,
+      "versionNonce": 168116,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [64, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          64,
+          0
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "aW"
     },
     {
       "id": "fastapi_to_jinja",
@@ -1062,7 +1172,7 @@
       "x": 772,
       "y": 220,
       "width": 60,
-      "height": -45,
+      "height": 45,
       "angle": 0,
       "strokeColor": "#f4b740",
       "backgroundColor": "transparent",
@@ -1073,21 +1183,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 304,
-      "version": 1,
-      "versionNonce": 304,
+      "version": 2,
+      "versionNonce": 1672676492,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [60, -45]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          -45
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "aX"
     },
     {
       "id": "fastapi_to_sqlalchemy",
@@ -1106,21 +1228,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 305,
-      "version": 1,
-      "versionNonce": 305,
+      "version": 2,
+      "versionNonce": 676747828,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [60, 25]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          25
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "aY"
     },
     {
       "id": "sqlalchemy_to_pgbouncer",
@@ -1139,21 +1273,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 306,
-      "version": 1,
-      "versionNonce": 306,
+      "version": 2,
+      "versionNonce": 1920635660,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [50, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          50,
+          0
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "aZ"
     },
     {
       "id": "pgbouncer_to_postgres",
@@ -1172,21 +1318,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 307,
-      "version": 1,
-      "versionNonce": 307,
+      "version": 2,
+      "versionNonce": 1987376052,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [55, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          55,
+          0
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "aa"
     },
     {
       "id": "worker_to_httpx",
@@ -1205,21 +1363,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 308,
-      "version": 1,
-      "versionNonce": 308,
+      "version": 2,
+      "versionNonce": 239882636,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [65, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          65,
+          0
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "ab"
     },
     {
       "id": "httpx_to_urls",
@@ -1238,21 +1408,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 309,
-      "version": 1,
-      "versionNonce": 309,
+      "version": 2,
+      "versionNonce": 142892340,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [60, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          0
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "ac"
     },
     {
       "id": "urls_to_lifecycle",
@@ -1271,21 +1453,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 310,
-      "version": 1,
-      "versionNonce": 310,
+      "version": 2,
+      "versionNonce": 1986150412,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [50, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          50,
+          0
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "ad"
     },
     {
       "id": "lifecycle_to_postgres",
@@ -1293,7 +1487,7 @@
       "x": 1322,
       "y": 560,
       "width": 85,
-      "height": -145,
+      "height": 145,
       "angle": 0,
       "strokeColor": "#f4b740",
       "backgroundColor": "transparent",
@@ -1304,29 +1498,41 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 311,
-      "version": 1,
-      "versionNonce": 311,
+      "version": 2,
+      "versionNonce": 1206556340,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1785454915091,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [85, -145]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          85,
+          -145
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "ae"
     },
     {
       "id": "worker_reads_db",
       "type": "arrow",
-      "x": 407,
-      "y": 508,
+      "x": 384.71314950727174,
+      "y": 496.8565747536359,
       "width": 985,
-      "height": -112,
+      "height": 112,
       "angle": 0,
       "strokeColor": "#8fa39a",
       "backgroundColor": "transparent",
@@ -1337,41 +1543,41 @@
       "opacity": 90,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 312,
-      "version": 1,
-      "versionNonce": 312,
+      "version": 101,
+      "versionNonce": 2003824277,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
+      "boundElements": [],
+      "updated": 1786145999830,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [985, -112]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          985,
+          -112
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "index": "af"
     }
   ],
   "appState": {
-    "gridSize": null,
+    "gridSize": 20,
+    "gridStep": 5,
+    "gridModeEnabled": false,
     "viewBackgroundColor": "#050807",
-    "currentItemStrokeColor": "#63d471",
-    "currentItemBackgroundColor": "transparent",
-    "currentItemFillStyle": "solid",
-    "currentItemStrokeWidth": 2,
-    "currentItemStrokeStyle": "solid",
-    "currentItemRoughness": 1,
-    "currentItemOpacity": 100,
-    "currentItemFontFamily": 1,
-    "currentItemFontSize": 16,
-    "currentItemTextAlign": "left",
-    "currentItemStartArrowhead": null,
-    "currentItemEndArrowhead": "arrow",
-    "scrollX": 80,
-    "scrollY": 80,
-    "zoom": { "value": 0.8 }
+    "lockedMultiSelections": {}
   },
   "files": {}
 }

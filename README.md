@@ -147,6 +147,33 @@ GET /version
 - `/ready` confirms the app can query the database.
 - `/version` returns the app version and git commit value.
 
+## Logs
+
+Application logs are written to container stdout and stderr.
+
+View worker logs:
+
+```powershell
+docker-compose logs -f worker
+```
+
+Worker logs use one JSON object per event. Example:
+
+```json
+{"component":"worker","event":"monitor_check_started","monitor_id":1,"monitor_name":"Demo"}
+{"component":"worker","event":"monitor_check_completed","monitor_id":1,"success":true,"status_code":200,"response_time_ms":42,"monitor_status":"healthy"}
+```
+
+Important worker events:
+
+```text
+worker_started
+monitor_check_skipped
+monitor_check_started
+monitor_check_completed
+worker_loop_failed
+```
+
 ## Local Login
 
 Default local dashboard credentials:
