@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from opswatch.api.main import app
 from opswatch.database import get_db
-from opswatch.models import Base, Incident, Monitor
+from opswatch.models import Base, Incident, Monitor, MonitorCheck
 
 
 @pytest.fixture
@@ -190,3 +190,24 @@ def test_check_listing_filter(client: TestClient):
     response = client.get("/api/v1/checks?success=true")
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_metrics_returns_prometheus_text(client: TestClient):
+    db: Session = next(app.dependency_overrides[get_db]())
+    monitor = Monitor(name="Demo", url="http://example.test", method="GET", enabled=True, status="healthy")
+    db.add(monitor)
+    db.commit()
+    db.refresh(monitor)
+    db.add(MonitorCheck(monitor_id=monitor.id, success=True, status_code=200, response_time_ms=10))
+    db.add(Incident(monitor_id=monitor.id, title="Demo failing", status="open", severity="warning"))
+    db.commit()
+    db.close()
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "opswatch_monitors_count 1" in response.text
+    assert 'opswatch_monitor_status_count{status="healthy"} 1' in response.text
+    assert 'opswatch_monitor_check_result_count{success="true"} 1' in response.text
+    assert 'opswatch_incident_status_count{status="open"} 1' in response.text

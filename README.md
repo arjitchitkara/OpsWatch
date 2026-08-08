@@ -4,7 +4,7 @@ OpsWatch is a local-first uptime monitoring and incident response MVP.
 
 It lets an admin create HTTP monitors, run checks, record check results, and track incidents from a small dashboard.
 
-Current version: `0.3.1`
+Current version: `0.4.0`
 
 ## What It Does
 
@@ -18,6 +18,7 @@ Current version: `0.3.1`
 - opens an incident after repeated failures
 - resolves an open incident after enough successful checks
 - shows monitors, checks, and incidents in a dark Tailwind dashboard
+- exposes `/metrics` in Prometheus text format
 
 ## Architecture
 
@@ -141,11 +142,35 @@ PATCH  /api/v1/incidents/{incident_id}
 GET /health
 GET /ready
 GET /version
+GET /metrics
 ```
 
 - `/health` confirms the FastAPI process is running.
 - `/ready` confirms the app can query the database.
 - `/version` returns the app version and git commit value.
+- `/metrics` returns application metrics that Prometheus can scrape.
+
+## Metrics
+
+The `/metrics` route returns plain text in Prometheus format.
+
+Current metrics:
+
+```text
+opswatch_monitors_count
+opswatch_monitor_status_count{status="healthy|degraded|down|paused|unknown"}
+opswatch_monitor_enabled_count{enabled="true|false"}
+opswatch_monitor_checks_count
+opswatch_monitor_check_result_count{success="true|false"}
+opswatch_incidents_count
+opswatch_incident_status_count{status="open|acknowledged|resolved"}
+```
+
+Open it locally:
+
+```text
+http://localhost/metrics
+```
 
 ## Logs
 

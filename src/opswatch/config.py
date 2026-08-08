@@ -7,7 +7,7 @@ import os
 class Settings:
     """Runtime settings loaded from environment variables."""
 
-    app_version: str = "0.3.1"
+    app_version: str = "0.4.0"
     git_sha: str = "local"
     admin_username: str = "admin"
     admin_password: str = "admin"
@@ -34,7 +34,7 @@ def get_settings() -> Settings:
     """Return cached application settings."""
 
     return Settings(
-        app_version=os.getenv("APP_VERSION", "0.3.1"),
+        app_version=os.getenv("APP_VERSION", "0.4.0"),
         git_sha=os.getenv("GIT_SHA", "local"),
         admin_username=os.getenv("ADMIN_USERNAME", "admin"),
         admin_password=os.getenv("ADMIN_PASSWORD", "admin"),
