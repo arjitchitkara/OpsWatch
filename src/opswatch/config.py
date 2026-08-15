@@ -15,6 +15,7 @@ class Settings:
     database_url: str = "postgresql+psycopg://opswatch:opswatch@localhost:6432/opswatch"
     migration_database_url: str = "postgresql+psycopg://opswatch:opswatch@localhost:5432/opswatch"
     worker_poll_seconds: int = 5
+    worker_metrics_port: int = 9100
 
 
 def _int_env(name: str, default: int) -> int:
@@ -48,4 +49,5 @@ def get_settings() -> Settings:
             "postgresql+psycopg://opswatch:opswatch@localhost:5432/opswatch",
         ),
         worker_poll_seconds=_int_env("WORKER_POLL_SECONDS", 5),
+        worker_metrics_port=_int_env("WORKER_METRICS_PORT", 9100),
     )

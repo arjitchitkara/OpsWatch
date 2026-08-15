@@ -1,12 +1,23 @@
 import json
 import logging
 
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from opswatch.models import Base, Monitor
 from opswatch.monitoring.http_checks import MonitorCheckResult
+from opswatch.observability.worker_metrics import WorkerLoopTimer, worker_metrics
 from opswatch.worker import main as worker
+
+
+@pytest.fixture(autouse=True)
+def reset_worker_metrics():
+    """Clear worker metrics before and after each test."""
+
+    worker_metrics.reset()
+    yield
+    worker_metrics.reset()
 
 
 def make_session():
@@ -73,6 +84,8 @@ def test_worker_logs_disabled_monitor_skip(monkeypatch, caplog):
             "reason": "disabled",
         }
     ]
+    metrics_text = worker_metrics.render_prometheus_text()
+    assert 'opswatch_worker_monitor_check_skipped_total{reason="disabled"} 1' in metrics_text
 
 
 def test_worker_checks_enabled_due_monitor(monkeypatch, caplog):
@@ -103,3 +116,19 @@ def test_worker_checks_enabled_due_monitor(monkeypatch, caplog):
     assert events[1]["status_code"] == 200
     assert events[1]["response_time_ms"] == 10
     assert events[1]["monitor_status"] == "healthy"
+    metrics_text = worker_metrics.render_prometheus_text()
+    assert 'opswatch_worker_monitor_checks_total{error_type="none",result="success"} 1' in metrics_text
+    assert 'opswatch_worker_monitor_check_duration_seconds_count{error_type="none",result="success"} 1' in metrics_text
+    assert 'opswatch_worker_monitor_check_duration_seconds_sum{error_type="none",result="success"} 0.010000' in metrics_text
+
+
+def test_worker_loop_timer_records_failed_loop():
+    with pytest.raises(RuntimeError):
+        with WorkerLoopTimer():
+            raise RuntimeError("database failed")
+
+    metrics_text = worker_metrics.render_prometheus_text()
+
+    assert "opswatch_worker_loop_runs_total 1" in metrics_text
+    assert "opswatch_worker_loop_failures_total 1" in metrics_text
+    assert "opswatch_worker_loop_duration_seconds_count 1" in metrics_text

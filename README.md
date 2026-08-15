@@ -46,6 +46,7 @@ Worker
 
 Prometheus
   -> FastAPI /metrics
+  -> Worker /metrics
   -> time-series storage
 
 Grafana
@@ -175,6 +176,12 @@ opswatch_monitor_checks_count
 opswatch_monitor_check_result_count{success="true|false"}
 opswatch_incidents_count
 opswatch_incident_status_count{status="open|acknowledged|resolved"}
+opswatch_worker_loop_runs_total
+opswatch_worker_loop_failures_total
+opswatch_worker_loop_duration_seconds
+opswatch_worker_monitor_checks_total{result="success|failure",error_type="none|timeout|request_error|unexpected_status|expected_body_missing"}
+opswatch_worker_monitor_check_duration_seconds
+opswatch_worker_monitor_check_skipped_total{reason="disabled|not_due"}
 ```
 
 Open it locally:
@@ -187,6 +194,7 @@ Prometheus scrapes this endpoint from inside Docker Compose:
 
 ```text
 http://api:8000/metrics
+http://worker:9100/metrics
 ```
 
 The Prometheus config lives at:

@@ -10,6 +10,11 @@ from opswatch.database import SessionLocal
 from opswatch.models import Monitor, MonitorCheck
 from opswatch.monitoring.http_checks import check_monitor_endpoint
 from opswatch.monitoring.incident_lifecycle import record_monitor_check_result
+from opswatch.observability.worker_metrics import (
+    WorkerLoopTimer,
+    start_worker_metrics_server,
+    worker_metrics,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("opswatch.worker")
@@ -58,9 +63,11 @@ def check_monitor_if_due(db, monitor: Monitor) -> bool:
 
     if not monitor.enabled:
         log_worker_event("monitor_check_skipped", monitor_id=monitor.id, reason="disabled")
+        worker_metrics.record_monitor_check_skip("disabled")
         return False
     if not monitor_is_due_for_check(db, monitor):
         log_worker_event("monitor_check_skipped", monitor_id=monitor.id, reason="not_due")
+        worker_metrics.record_monitor_check_skip("not_due")
         return False
     log_worker_event(
         "monitor_check_started",
@@ -71,6 +78,8 @@ def check_monitor_if_due(db, monitor: Monitor) -> bool:
         expected_status=monitor.expected_status,
     )
     result = check_monitor_endpoint(monitor)
+    duration_seconds = result.response_time_ms / 1000 if result.response_time_ms is not None else None
+    worker_metrics.record_monitor_check(result.success, result.error_type, duration_seconds)
     check = record_monitor_check_result(db, monitor, result)
     log_worker_event(
         "monitor_check_completed",
@@ -90,10 +99,16 @@ def main() -> None:
     """Run the monitor worker loop forever."""
 
     settings = get_settings()
-    log_worker_event("worker_started", poll_interval_seconds=settings.worker_poll_seconds)
+    start_worker_metrics_server(settings.worker_metrics_port)
+    log_worker_event(
+        "worker_started",
+        poll_interval_seconds=settings.worker_poll_seconds,
+        metrics_port=settings.worker_metrics_port,
+    )
     while True:
         try:
-            run_due_monitor_checks_once()
+            with WorkerLoopTimer():
+                run_due_monitor_checks_once()
         except Exception as exc:
             logger.exception(
                 build_worker_log_event(

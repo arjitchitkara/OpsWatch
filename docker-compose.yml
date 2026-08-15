@@ -67,6 +67,9 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://opswatch:opswatch@pgbouncer:6432/opswatch}
       WORKER_POLL_SECONDS: ${WORKER_POLL_SECONDS:-5}
+      WORKER_METRICS_PORT: ${WORKER_METRICS_PORT:-9100}
+    expose:
+      - "9100"
     depends_on:
       api:
         condition: service_healthy
@@ -109,6 +112,8 @@ services:
     image: prom/prometheus:v2.54.1
     depends_on:
       api:
+        condition: service_healthy
+      worker:
         condition: service_healthy
     ports:
       - "127.0.0.1:9090:9090"
