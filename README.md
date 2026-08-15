@@ -19,6 +19,7 @@ Current version: `0.4.0`
 - resolves an open incident after enough successful checks
 - shows monitors, checks, and incidents in a dark Tailwind dashboard
 - exposes `/metrics` in Prometheus text format
+- includes Prometheus and Grafana for local observability
 
 ## Architecture
 
@@ -42,6 +43,14 @@ FastAPI and worker
 Worker
   -> httpx
   -> monitored URLs
+
+Prometheus
+  -> FastAPI /metrics
+  -> time-series storage
+
+Grafana
+  -> Prometheus
+  -> dashboards
 ```
 
 ## Data Model
@@ -85,6 +94,7 @@ The Docker Compose stack runs:
 - `pgbouncer`: database connection pooler
 - `failure-lab`: local test service with healthy, failing, slow, and toggle routes
 - `prometheus`: metrics database that scrapes the OpsWatch `/metrics` route
+- `grafana`: dashboard tool that visualizes Prometheus metrics
 
 ## Container Runtime
 
@@ -193,6 +203,39 @@ http://localhost:9090
 
 The metrics data is stored in the `prometheus_data` Docker volume. The local retention time is `7d`, so old metrics are removed after seven days.
 
+## Grafana
+
+Grafana reads metrics from Prometheus and turns them into dashboards.
+
+Open Grafana locally:
+
+```text
+http://localhost:3000
+```
+
+Default local Grafana credentials:
+
+```text
+username: admin
+password: admin
+```
+
+Grafana is provisioned from files in the repo:
+
+```text
+config/grafana/provisioning/datasources/prometheus.yml
+config/grafana/provisioning/dashboards/opswatch.yml
+config/grafana/dashboards/opswatch-overview.json
+```
+
+The provisioned datasource points to Prometheus from inside Docker Compose:
+
+```text
+http://prometheus:9090
+```
+
+The Grafana app data is stored in the `grafana_data` Docker volume.
+
 ## Logs
 
 Application logs are written to container stdout and stderr.
@@ -229,6 +272,8 @@ Default local dashboard credentials:
 
 These credentials are for local development only and must be changed before any public deployment.
 
+Default local Grafana credentials are also `admin` / `admin`.
+
 ## Quick Start
 
 On this machine, use `docker-compose`:
@@ -244,6 +289,7 @@ Then open:
 - API health: http://localhost/health
 - Failure Lab: http://localhost/failure-lab/health
 - Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000
 
 If the database volume has old local data that you do not need:
 
@@ -274,6 +320,7 @@ docker-compose logs -f api
 docker-compose logs -f worker
 docker-compose logs -f nginx
 docker-compose logs -f prometheus
+docker-compose logs -f grafana
 docker-compose down
 ```
 
