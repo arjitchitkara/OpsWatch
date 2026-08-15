@@ -105,6 +105,30 @@ services:
       - ALL
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:9090/-/healthy >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
   nginx:
     image: nginx:1.27-alpine
     depends_on:
@@ -126,3 +150,4 @@ services:
 
 volumes:
   postgres_data:
+  prometheus_data:

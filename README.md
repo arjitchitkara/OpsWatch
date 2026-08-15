@@ -84,6 +84,7 @@ The Docker Compose stack runs:
 - `postgres`: PostgreSQL database
 - `pgbouncer`: database connection pooler
 - `failure-lab`: local test service with healthy, failing, slow, and toggle routes
+- `prometheus`: metrics database that scrapes the OpsWatch `/metrics` route
 
 ## Container Runtime
 
@@ -172,6 +173,26 @@ Open it locally:
 http://localhost/metrics
 ```
 
+Prometheus scrapes this endpoint from inside Docker Compose:
+
+```text
+http://api:8000/metrics
+```
+
+The Prometheus config lives at:
+
+```text
+config/prometheus/prometheus.yml
+```
+
+Prometheus is exposed only on this machine:
+
+```text
+http://localhost:9090
+```
+
+The metrics data is stored in the `prometheus_data` Docker volume. The local retention time is `7d`, so old metrics are removed after seven days.
+
 ## Logs
 
 Application logs are written to container stdout and stderr.
@@ -222,6 +243,7 @@ Then open:
 - Dashboard: http://localhost
 - API health: http://localhost/health
 - Failure Lab: http://localhost/failure-lab/health
+- Prometheus: http://localhost:9090
 
 If the database volume has old local data that you do not need:
 
@@ -251,6 +273,7 @@ docker-compose ps
 docker-compose logs -f api
 docker-compose logs -f worker
 docker-compose logs -f nginx
+docker-compose logs -f prometheus
 docker-compose down
 ```
 
