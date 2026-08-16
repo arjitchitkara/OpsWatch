@@ -1,0 +1,115 @@
+apiVersion: 1
+
+muteTimes:
+  - orgId: 1
+    name: opswatch_local_notifications_muted
+    time_intervals:
+      - times:
+          - start_time: "00:00"
+            end_time: "24:00"
+
+policies:
+  - orgId: 1
+    receiver: grafana-default-email
+    group_by:
+      - grafana_folder
+      - alertname
+    routes:
+      - receiver: grafana-default-email
+        object_matchers:
+          - ["app", "=", "opswatch"]
+        mute_time_intervals:
+          - opswatch_local_notifications_muted
+
+groups:
+  - orgId: 1
+    name: OpsWatch monitor alerts
+    folder: OpsWatch
+    interval: 30s
+    rules:
+      - uid: opswatch_down_monitors
+        title: Down monitors detected
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: sum(opswatch_monitor_status_count{status="down"}) or vector(0)
+              instant: true
+              intervalMs: 1000
+              legendFormat: down monitors
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params: []
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 30s
+        annotations:
+          summary: One or more OpsWatch monitors are down.
+          description: Check the OpsWatch dashboard, Prometheus metrics, and application logs to find the failing monitor.
+        labels:
+          app: opswatch
+          severity: warning

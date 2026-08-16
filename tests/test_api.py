@@ -1,4 +1,6 @@
 from collections.abc import Generator
+import json
+import logging
 
 import pytest
 from fastapi.testclient import TestClient
@@ -211,3 +213,21 @@ def test_metrics_returns_prometheus_text(client: TestClient):
     assert 'opswatch_monitor_status_count{status="healthy"} 1' in response.text
     assert 'opswatch_monitor_check_result_count{success="true"} 1' in response.text
     assert 'opswatch_incident_status_count{status="open"} 1' in response.text
+
+
+def test_api_writes_structured_request_log(client: TestClient, caplog):
+    caplog.set_level(logging.INFO, logger="opswatch.api")
+
+    response = client.get("/health", headers={"x-request-id": "test-request-id"})
+
+    events = [json.loads(record.message) for record in caplog.records]
+    request_events = [event for event in events if event["event"] == "api_request_completed"]
+
+    assert response.status_code == 200
+    assert response.headers["x-request-id"] == "test-request-id"
+    assert request_events[-1]["component"] == "api"
+    assert request_events[-1]["request_id"] == "test-request-id"
+    assert request_events[-1]["method"] == "GET"
+    assert request_events[-1]["path"] == "/health"
+    assert request_events[-1]["status_code"] == 200
+    assert isinstance(request_events[-1]["duration_ms"], int)

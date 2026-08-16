@@ -6,11 +6,19 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from starlette.middleware.sessions import SessionMiddleware
 
+from opswatch.api.request_logging import (
+    configure_api_logging,
+    elapsed_request_time_ms,
+    get_request_id,
+    log_api_request,
+    started_request_timer,
+)
 from opswatch.api.routes import api_router, dashboard_router
 from opswatch.config import get_settings
 from opswatch.database import get_db
 from opswatch.observability.metrics import build_opswatch_metrics
 
+configure_api_logging()
 settings = get_settings()
 
 app = FastAPI(title="OpsWatch", version=settings.app_version)
@@ -23,6 +31,34 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 app.include_router(dashboard_router)
 app.include_router(api_router)
+
+
+@app.middleware("http")
+async def structured_request_logging(request, call_next):
+    """Write one structured log event for each API request."""
+
+    request_id = get_request_id(request)
+    started_at = started_request_timer()
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        log_api_request(
+            request,
+            request_id,
+            status_code=500,
+            duration_ms=elapsed_request_time_ms(started_at),
+            error_type=type(exc).__name__,
+        )
+        raise
+
+    response.headers["x-request-id"] = request_id
+    log_api_request(
+        request,
+        request_id,
+        status_code=response.status_code,
+        duration_ms=elapsed_request_time_ms(started_at),
+    )
+    return response
 
 
 @app.get("/health")

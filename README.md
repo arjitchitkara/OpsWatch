@@ -233,7 +233,9 @@ Grafana is provisioned from files in the repo:
 ```text
 config/grafana/provisioning/datasources/prometheus.yml
 config/grafana/provisioning/dashboards/opswatch.yml
+config/grafana/provisioning/alerting/opswatch-alerts.yml
 config/grafana/dashboards/opswatch-overview.json
+config/grafana/dashboards/opswatch-worker.json
 ```
 
 The provisioned datasource points to Prometheus from inside Docker Compose:
@@ -243,6 +245,27 @@ http://prometheus:9090
 ```
 
 The Grafana app data is stored in the `grafana_data` Docker volume.
+
+The Grafana dashboards are split by purpose:
+
+```text
+OpsWatch Overview  product state, monitor state, checks, and incidents
+OpsWatch Worker    background worker loops, check results, durations, and skipped checks
+```
+
+Grafana also provisions a local alert rule:
+
+```text
+Down monitors detected
+```
+
+The alert fires when this Prometheus query is greater than zero:
+
+```text
+sum(opswatch_monitor_status_count{status="down"}) or vector(0)
+```
+
+No paid email, Slack, or external notification service is required for this alert. It is visible in the Grafana Alerting UI.
 
 ## Logs
 
@@ -270,6 +293,16 @@ monitor_check_started
 monitor_check_completed
 worker_loop_failed
 ```
+
+API requests also use structured JSON logs. Example:
+
+```json
+{"component":"api","event":"api_request_completed","request_id":"...","method":"GET","path":"/health","status_code":200,"duration_ms":4}
+```
+
+Each API response includes an `x-request-id` header. If the request already has an `x-request-id` header, OpsWatch keeps it. Otherwise, OpsWatch creates a new one.
+
+API request logs do not include request bodies or form values. This avoids logging passwords or other sensitive input.
 
 ## Local Login
 
