@@ -20,6 +20,7 @@ Current version: `0.4.0`
 - shows monitors, checks, and incidents in a dark Tailwind dashboard
 - exposes `/metrics` in Prometheus text format
 - includes Prometheus and Grafana for local observability
+- collects container logs with Grafana Alloy and stores them in Loki
 
 ## Architecture
 
@@ -52,6 +53,11 @@ Prometheus
 Grafana
   -> Prometheus
   -> dashboards
+
+Alloy
+  -> Docker container logs
+  -> Loki
+  -> Grafana logs dashboard
 ```
 
 ## Data Model
@@ -96,6 +102,8 @@ The Docker Compose stack runs:
 - `failure-lab`: local test service with healthy, failing, slow, and toggle routes
 - `prometheus`: metrics database that scrapes the OpsWatch `/metrics` route
 - `grafana`: dashboard tool that visualizes Prometheus metrics
+- `loki`: log database that stores container logs
+- `alloy`: log collector that reads Docker container logs and sends them to Loki
 
 ## Container Runtime
 
@@ -236,12 +244,19 @@ config/grafana/provisioning/dashboards/opswatch.yml
 config/grafana/provisioning/alerting/opswatch-alerts.yml
 config/grafana/dashboards/opswatch-overview.json
 config/grafana/dashboards/opswatch-worker.json
+config/grafana/dashboards/opswatch-logs.json
 ```
 
 The provisioned datasource points to Prometheus from inside Docker Compose:
 
 ```text
 http://prometheus:9090
+```
+
+Grafana also has a Loki datasource for logs:
+
+```text
+http://loki:3100
 ```
 
 The Grafana app data is stored in the `grafana_data` Docker volume.
@@ -251,19 +266,30 @@ The Grafana dashboards are split by purpose:
 ```text
 OpsWatch Overview  product state, monitor state, checks, and incidents
 OpsWatch Worker    background worker loops, check results, durations, and skipped checks
+OpsWatch Logs      API, worker, and stack logs from Loki
 ```
 
 Grafana also provisions a local alert rule:
 
 ```text
 Down monitors detected
+API metrics scrape is down
+Worker metrics scrape is down
+Worker stopped running loops
+Worker loop failures detected
+Monitor check failures increased
+Loki metrics scrape is down
+Alloy metrics scrape is down
+Alloy is dropping log entries
 ```
 
-The alert fires when this Prometheus query is greater than zero:
+The monitor alert fires when this Prometheus query is greater than zero:
 
 ```text
 sum(opswatch_monitor_status_count{status="down"}) or vector(0)
 ```
+
+The platform alerts watch whether Prometheus can scrape the API, worker, Loki, and Alloy. They also watch worker activity and the log pipeline.
 
 No paid email, Slack, or external notification service is required for this alert. It is visible in the Grafana Alerting UI.
 
@@ -304,6 +330,43 @@ Each API response includes an `x-request-id` header. If the request already has 
 
 API request logs do not include request bodies or form values. This avoids logging passwords or other sensitive input.
 
+Grafana Alloy collects Docker container logs for OpsWatch services and sends them to Loki.
+
+The Alloy config lives at:
+
+```text
+config/alloy/config.alloy
+```
+
+The Loki config lives at:
+
+```text
+config/loki/loki.yml
+```
+
+Loki is exposed only on this machine:
+
+```text
+http://localhost:3100
+```
+
+Alloy's local debugging UI is exposed only on this machine:
+
+```text
+http://localhost:12345
+```
+
+The Loki log data is stored in the `loki_data` Docker volume. The Alloy runtime data is stored in the `alloy_data` Docker volume.
+
+Useful Loki queries in Grafana:
+
+```logql
+{app="opswatch", service_name=~"api|worker"} | json
+{app="opswatch", service_name="api"} | json | event="api_request_completed"
+{app="opswatch", service_name="worker"} | json
+{app="opswatch"} |~ "(?i)(error|failed|exception|timeout)"
+```
+
 ## Local Login
 
 Default local dashboard credentials:
@@ -331,6 +394,8 @@ Then open:
 - Failure Lab: http://localhost/failure-lab/health
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3000
+- Loki: http://localhost:3100
+- Alloy: http://localhost:12345
 
 If the database volume has old local data that you do not need:
 
@@ -362,6 +427,8 @@ docker-compose logs -f worker
 docker-compose logs -f nginx
 docker-compose logs -f prometheus
 docker-compose logs -f grafana
+docker-compose logs -f loki
+docker-compose logs -f alloy
 docker-compose down
 ```
 

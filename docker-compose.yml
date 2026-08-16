@@ -1,6 +1,9 @@
 services:
   postgres:
     image: postgres:16-alpine
+    labels:
+      opswatch.logs: "true"
+      opswatch.service: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-opswatch}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opswatch}
@@ -17,6 +20,9 @@ services:
 
   pgbouncer:
     image: edoburu/pgbouncer:latest
+    labels:
+      opswatch.logs: "true"
+      opswatch.service: pgbouncer
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,6 +40,9 @@ services:
   api:
     build: .
     init: true
+    labels:
+      opswatch.logs: "true"
+      opswatch.service: api
     environment:
       APP_VERSION: ${APP_VERSION:-0.4.0}
       GIT_SHA: ${GIT_SHA:-local}
@@ -64,6 +73,9 @@ services:
   worker:
     build: .
     init: true
+    labels:
+      opswatch.logs: "true"
+      opswatch.service: worker
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://opswatch:opswatch@pgbouncer:6432/opswatch}
       WORKER_POLL_SECONDS: ${WORKER_POLL_SECONDS:-5}
@@ -92,6 +104,9 @@ services:
   failure-lab:
     build: .
     init: true
+    labels:
+      opswatch.logs: "true"
+      opswatch.service: failure-lab
     command: uvicorn opswatch.failure_lab.main:app --host 0.0.0.0 --port 9000
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/health', timeout=2).read()\""]
@@ -110,6 +125,9 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.54.1
+    labels:
+      opswatch.logs: "true"
+      opswatch.service: prometheus
     depends_on:
       api:
         condition: service_healthy
@@ -136,9 +154,14 @@ services:
 
   grafana:
     image: grafana/grafana-oss:11.2.0
+    labels:
+      opswatch.logs: "true"
+      opswatch.service: grafana
     depends_on:
       prometheus:
         condition: service_healthy
+      loki:
+        condition: service_started
     ports:
       - "127.0.0.1:3000:3000"
     environment:
@@ -157,8 +180,46 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  loki:
+    image: grafana/loki:3.7.0
+    labels:
+      opswatch.logs: "true"
+      opswatch.service: loki
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./config/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    command:
+      - -config.file=/etc/loki/loki.yml
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.18.0
+    labels:
+      opswatch.logs: "true"
+      opswatch.service: alloy
+    depends_on:
+      loki:
+        condition: service_started
+    ports:
+      - "127.0.0.1:12345:12345"
+    volumes:
+      - ./config/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    restart: unless-stopped
+
   nginx:
     image: nginx:1.27-alpine
+    labels:
+      opswatch.logs: "true"
+      opswatch.service: nginx
     depends_on:
       api:
         condition: service_healthy
@@ -180,3 +241,5 @@ volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
+  loki_data:
+  alloy_data:

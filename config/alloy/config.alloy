@@ -1,0 +1,65 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+discovery.docker "opswatch" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "opswatch_logs" {
+  targets = discovery.docker.opswatch.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_opswatch_logs"]
+    regex         = "true"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_opswatch_service"]
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "opswatch" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.opswatch.targets
+  labels        = { app = "opswatch", platform = "docker" }
+  relabel_rules = discovery.relabel.opswatch_logs.rules
+  forward_to    = [loki.process.opswatch.receiver]
+}
+
+loki.process "opswatch" {
+  forward_to = [loki.write.local.receiver]
+
+  stage.json {
+    expressions = {
+      component   = "component",
+      event       = "event",
+      error_type  = "error_type",
+      status_code = "status_code",
+    }
+    drop_malformed = false
+  }
+
+  stage.labels {
+    values = {
+      component  = "component",
+      event      = "event",
+      error_type = "error_type",
+    }
+  }
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
