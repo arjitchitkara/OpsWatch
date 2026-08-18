@@ -1,91 +1,149 @@
 {% extends "base.html" %}
-{% from "macros.html" import monitor_status_badge %}
+{% from "macros.html" import csrf_input, empty_state, monitor_status_badge, pagination_controls, timestamp %}
 {% block title %}Monitors - OpsWatch{% endblock %}
 {% block content %}
-<div class="mb-8">
-  <p class="text-sm uppercase tracking-[0.2em] text-ops-green">HTTP Monitoring</p>
-  <h1 class="mt-2 text-3xl font-semibold">Monitors</h1>
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <p class="ops-eyebrow">HTTP monitoring</p>
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight">Monitors</h1>
+    <p class="mt-2 text-sm text-base-content/55">Configure endpoints and control their scheduled checks.</p>
+  </div>
+  <a class="btn btn-primary btn-sm" href="#add-monitor">Add monitor</a>
 </div>
 
-<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
-  <div class="border-b border-ops-line px-5 py-4">
-    <h2 class="text-lg font-semibold">Add Monitor</h2>
-  </div>
-  <form class="grid gap-5 p-5" action="/monitors" method="post">
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <label class="grid gap-2 text-sm text-ops-muted">Name
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="name" placeholder="Failure Lab" required>
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted xl:col-span-2">URL
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="url" placeholder="http://failure-lab:9000/health" required>
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Method
-        <select class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="method">
-          <option>GET</option>
-          <option>HEAD</option>
-        </select>
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Expected Status
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_status" type="number" value="200">
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Interval Seconds
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="interval_seconds" type="number" value="60">
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Timeout Seconds
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="timeout_seconds" type="number" value="5">
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Failure Threshold
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="failure_threshold" type="number" value="3">
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Recovery Threshold
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="recovery_threshold" type="number" value="2">
-      </label>
-    </div>
-    <label class="grid gap-2 text-sm text-ops-muted">Expected Body
-      <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_body" placeholder="optional substring">
+<section class="ops-panel mb-6 p-4">
+  <form class="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_auto] md:items-end" action="/monitors" method="get">
+    <label class="form-control min-w-0">
+      <span class="label pb-2"><span class="label-text font-medium">Search</span></span>
+      <input class="input input-bordered w-full" type="search" name="search" value="{{ search }}" placeholder="Monitor name or URL">
     </label>
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <label class="flex items-center gap-2 text-sm text-ops-muted">
-        <input class="h-4 w-4 accent-ops-green" name="enabled" type="checkbox" value="true" checked>
-        Enabled
-      </label>
-      <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Create Monitor</button>
+    <label class="form-control">
+      <span class="label pb-2"><span class="label-text font-medium">Status</span></span>
+      <select class="select select-bordered w-full" name="status">
+        <option value="">All statuses</option>
+        {% for value in ["healthy", "degraded", "down", "unknown", "paused"] %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ value | title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="flex gap-2">
+      <button class="btn btn-primary flex-1 md:flex-none" type="submit">Apply</button>
+      {% if search or status_filter %}<a class="btn btn-ghost" href="/monitors">Clear</a>{% endif %}
     </div>
   </form>
 </section>
 
-<section class="rounded-lg border border-ops-line bg-ops-panel">
-  <div class="border-b border-ops-line px-5 py-4">
-    <h2 class="text-lg font-semibold">Configured Monitors</h2>
+<section class="ops-panel mb-6 overflow-hidden">
+  <div class="flex items-center justify-between border-b border-base-300 px-4 py-4 sm:px-5">
+    <div><h2 class="font-semibold">Configured monitors</h2><p class="mt-1 text-xs text-base-content/45">{{ pagination.total_items }} matching monitor{% if pagination.total_items != 1 %}s{% endif %}</p></div>
   </div>
   {% if monitors %}
-  <div class="overflow-x-auto">
-    <table class="w-full text-left text-sm">
-      <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
-        <tr><th class="px-5 py-3">Name</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">URL</th><th class="px-5 py-3">Interval</th><th class="px-5 py-3">Last checked</th><th class="px-5 py-3">Latency</th><th class="px-5 py-3">Last error</th><th class="px-5 py-3"></th></tr>
-      </thead>
-      <tbody class="divide-y divide-ops-line">
+  <div class="hidden overflow-x-auto lg:block">
+    <table class="table ops-table">
+      <thead><tr><th>Name</th><th>Status</th><th>Schedule</th><th>Last checked</th><th>Latency</th><th class="text-right">Action</th></tr></thead>
+      <tbody>
         {% for monitor in monitors %}
-        <tr class="hover:bg-ops-panel2/70">
-          <td class="px-5 py-4 font-medium"><a class="text-ops-green hover:underline" href="/monitors/{{ monitor.id }}">{{ monitor.name }}</a></td>
-          <td class="px-5 py-4">{{ monitor_status_badge(monitor.status) }}</td>
-          <td class="max-w-xl truncate px-5 py-4 text-ops-muted">{{ monitor.url }}</td>
-          <td class="px-5 py-4">{{ monitor.interval_seconds }}s</td>
-          <td class="px-5 py-4 text-ops-muted">{{ monitor.last_checked_at or "-" }}</td>
-          <td class="px-5 py-4">{% if monitor.last_response_time_ms is not none %}{{ monitor.last_response_time_ms }} ms{% else %}-{% endif %}</td>
-          <td class="px-5 py-4 text-ops-muted">{{ monitor.last_error_type or "-" }}</td>
-          <td class="px-5 py-4 text-right">
-            <form action="/monitors/{{ monitor.id }}/delete" method="post">
-              <button class="rounded-md border border-red-500/40 px-3 py-1.5 text-xs font-semibold text-ops-red hover:bg-red-500/10" type="submit">Delete</button>
-            </form>
+        <tr>
+          <td class="max-w-sm"><a class="link link-primary font-medium" href="/monitors/{{ monitor.id }}">{{ monitor.name }}</a><p class="mt-1 truncate text-xs text-base-content/40">{{ monitor.url }}</p></td>
+          <td>{{ monitor_status_badge(monitor.status) }}</td>
+          <td>{{ monitor.interval_seconds }} seconds</td>
+          <td class="text-base-content/55">{{ timestamp(monitor.last_checked_at, "Not checked") }}</td>
+          <td>{% if monitor.last_response_time_ms is not none %}{{ monitor.last_response_time_ms }} ms{% else %}-{% endif %}</td>
+          <td>
+            <div class="flex justify-end gap-2">
+              <a class="btn btn-ghost btn-xs" href="/monitors/{{ monitor.id }}">View</a>
+              <form action="/monitors/{{ monitor.id }}/state" method="post">
+                {{ csrf_input(csrf_token) }}
+                <input type="hidden" name="return_to" value="/monitors?search={{ search | urlencode }}&status={{ status_filter | urlencode }}&page={{ pagination.current_page }}">
+                <input type="hidden" name="enabled" value="{{ 'false' if monitor.enabled else 'true' }}">
+                <button class="btn btn-outline btn-xs" type="submit">{{ "Pause" if monitor.enabled else "Resume" }}</button>
+              </form>
+            </div>
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  <div class="lg:hidden">
+    {% for monitor in monitors %}
+    <article class="ops-mobile-row">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0"><a class="link link-primary block truncate font-medium" href="/monitors/{{ monitor.id }}">{{ monitor.name }}</a><p class="mt-1 truncate text-sm text-base-content/45">{{ monitor.url }}</p></div>
+        {{ monitor_status_badge(monitor.status) }}
+      </div>
+      <p class="mt-3 text-xs text-base-content/55">Every {{ monitor.interval_seconds }} seconds · {{ timestamp(monitor.last_checked_at, "Not checked") }}</p>
+      <div class="mt-4 flex gap-2">
+        <a class="btn btn-primary btn-sm flex-1" href="/monitors/{{ monitor.id }}">View</a>
+        <form class="flex-1" action="/monitors/{{ monitor.id }}/state" method="post">
+          {{ csrf_input(csrf_token) }}
+          <input type="hidden" name="return_to" value="/monitors?search={{ search | urlencode }}&status={{ status_filter | urlencode }}&page={{ pagination.current_page }}">
+          <input type="hidden" name="enabled" value="{{ 'false' if monitor.enabled else 'true' }}">
+          <button class="btn btn-outline btn-sm w-full" type="submit">{{ "Pause" if monitor.enabled else "Resume" }}</button>
+        </form>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {{ pagination_controls(pagination, "/monitors", "&search=" ~ (search | urlencode) ~ "&status=" ~ (status_filter | urlencode)) }}
   {% else %}
-  <p class="px-5 py-8 text-sm text-ops-muted">No monitors yet.</p>
+    {% if search or status_filter %}
+      {{ empty_state("No monitors match these filters", "Clear the filters or try a different search.", "Clear filters", "/monitors") }}
+    {% else %}
+      {{ empty_state("No monitors configured", "Add an HTTP endpoint to start scheduled uptime checks.", "Add monitor", "#add-monitor") }}
+    {% endif %}
   {% endif %}
 </section>
+
+<details id="add-monitor" class="ops-panel scroll-mt-24 overflow-hidden" {% if form_open %}open{% endif %}>
+  <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 font-semibold sm:px-5">
+    <span><span class="block">Add monitor</span><span class="mt-1 block text-xs font-normal text-base-content/45">Create one scheduled HTTP check.</span></span>
+    <span class="btn btn-primary btn-sm pointer-events-none">Open form</span>
+  </summary>
+  <form class="grid gap-5 border-t border-base-300 p-4 sm:p-5" action="/monitors" method="post">
+    {{ csrf_input(csrf_token) }}
+    {% if form_errors %}
+    <div class="alert border border-error/35 bg-error/10 text-error md:col-span-2" role="alert"><span>Fix the highlighted fields and submit the form again.</span></div>
+    {% endif %}
+    <div class="grid gap-4 md:grid-cols-2">
+      <label class="form-control">
+        <span class="label pb-2"><span class="label-text font-medium">Name</span></span>
+        <input class="input input-bordered w-full {% if form_errors.name %}input-error{% endif %}" name="name" value="{{ form_values.name }}" maxlength="120" placeholder="Public website" required>
+        {% if form_errors.name %}<span class="ops-field-error">{{ form_errors.name }}</span>{% endif %}
+      </label>
+      <label class="form-control">
+        <span class="label pb-2"><span class="label-text font-medium">URL</span></span>
+        <input class="input input-bordered w-full {% if form_errors.url %}input-error{% endif %}" name="url" type="url" value="{{ form_values.url }}" maxlength="2048" placeholder="https://example.com/health" required>
+        <span class="ops-field-help">Use a complete HTTP or HTTPS URL. Docker service names are valid locally.</span>
+        {% if form_errors.url %}<span class="ops-field-error">{{ form_errors.url }}</span>{% endif %}
+      </label>
+      <label class="form-control">
+        <span class="label pb-2"><span class="label-text font-medium">Method</span></span>
+        <select class="select select-bordered w-full" name="method">
+          {% for value in ["GET", "HEAD"] %}<option value="{{ value }}" {% if form_values.method == value %}selected{% endif %}>{{ value }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="form-control">
+        <span class="label pb-2"><span class="label-text font-medium">Expected HTTP status</span></span>
+        <input class="input input-bordered w-full {% if form_errors.expected_status %}input-error{% endif %}" name="expected_status" type="number" min="100" max="599" value="{{ form_values.expected_status }}" required>
+        {% if form_errors.expected_status %}<span class="ops-field-error">{{ form_errors.expected_status }}</span>{% endif %}
+      </label>
+      <label class="form-control md:col-span-2">
+        <span class="label pb-2"><span class="label-text font-medium">Expected response text <span class="font-normal text-base-content/45">(optional)</span></span></span>
+        <input class="input input-bordered w-full" name="expected_body" value="{{ form_values.expected_body }}" placeholder="healthy">
+      </label>
+    </div>
+    <fieldset>
+      <legend class="mb-3 text-sm font-semibold">Schedule and state rules</legend>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <label class="form-control"><span class="label pb-2"><span class="label-text">Interval (seconds)</span></span><input class="input input-bordered w-full {% if form_errors.interval_seconds %}input-error{% endif %}" name="interval_seconds" type="number" min="5" max="86400" value="{{ form_values.interval_seconds }}" required>{% if form_errors.interval_seconds %}<span class="ops-field-error">{{ form_errors.interval_seconds }}</span>{% endif %}</label>
+        <label class="form-control"><span class="label pb-2"><span class="label-text">Timeout (seconds)</span></span><input class="input input-bordered w-full {% if form_errors.timeout_seconds %}input-error{% endif %}" name="timeout_seconds" type="number" min="1" max="120" value="{{ form_values.timeout_seconds }}" required>{% if form_errors.timeout_seconds %}<span class="ops-field-error">{{ form_errors.timeout_seconds }}</span>{% endif %}</label>
+        <label class="form-control"><span class="label pb-2"><span class="label-text">Failures before down</span></span><input class="input input-bordered w-full {% if form_errors.failure_threshold %}input-error{% endif %}" name="failure_threshold" type="number" min="1" max="20" value="{{ form_values.failure_threshold }}" required>{% if form_errors.failure_threshold %}<span class="ops-field-error">{{ form_errors.failure_threshold }}</span>{% endif %}</label>
+        <label class="form-control"><span class="label pb-2"><span class="label-text">Successes to recover</span></span><input class="input input-bordered w-full {% if form_errors.recovery_threshold %}input-error{% endif %}" name="recovery_threshold" type="number" min="1" max="20" value="{{ form_values.recovery_threshold }}" required>{% if form_errors.recovery_threshold %}<span class="ops-field-error">{{ form_errors.recovery_threshold }}</span>{% endif %}</label>
+        <label class="flex items-end pb-3"><span class="flex items-center gap-3"><input class="toggle toggle-primary" name="enabled" type="checkbox" value="true" {% if form_values.enabled %}checked{% endif %}><span class="text-sm font-medium">Enabled</span></span></label>
+      </div>
+    </fieldset>
+    <div class="flex justify-end"><button class="btn btn-primary" data-submitting-label="Creating…" type="submit">Create monitor</button></div>
+  </form>
+</details>
 {% endblock %}

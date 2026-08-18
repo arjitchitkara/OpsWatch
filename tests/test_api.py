@@ -1,6 +1,7 @@
 from collections.abc import Generator
 import json
 import logging
+import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -36,9 +37,25 @@ def client() -> Generator[TestClient, None, None]:
     app.dependency_overrides.clear()
 
 
-def login(client: TestClient) -> None:
-    response = client.post("/login", data={"username": "admin", "password": "admin"}, follow_redirects=False)
+def csrf_token_from(response) -> str:
+    """Return the CSRF token rendered in a dashboard form."""
+
+    match = re.search(r'name="csrf_token" value="([^"]+)"', response.text)
+    assert match is not None
+    return match.group(1)
+
+
+def login(client: TestClient) -> str:
+    """Start a dashboard session and return its CSRF token."""
+
+    csrf_token = csrf_token_from(client.get("/login"))
+    response = client.post(
+        "/login",
+        data={"username": "admin", "password": "admin", "csrf_token": csrf_token},
+        follow_redirects=False,
+    )
     assert response.status_code == 303
+    return csrf_token
 
 
 def test_login_page_renders(client: TestClient):
@@ -97,7 +114,7 @@ def test_monitor_crud_with_session_auth(client: TestClient):
 
 
 def test_dashboard_can_update_monitor_and_pause_resume(client: TestClient):
-    login(client)
+    csrf_token = login(client)
     created = client.post(
         "/api/v1/monitors",
         json={
@@ -117,6 +134,7 @@ def test_dashboard_can_update_monitor_and_pause_resume(client: TestClient):
     paused = client.post(
         f"/monitors/{monitor_id}",
         data={
+            "csrf_token": csrf_token,
             "name": "Updated Demo",
             "url": "http://example.test/health",
             "method": "HEAD",
@@ -145,6 +163,7 @@ def test_dashboard_can_update_monitor_and_pause_resume(client: TestClient):
     resumed = client.post(
         f"/monitors/{monitor_id}",
         data={
+            "csrf_token": csrf_token,
             "name": "Updated Demo",
             "url": "http://example.test/health",
             "method": "HEAD",
@@ -163,6 +182,95 @@ def test_dashboard_can_update_monitor_and_pause_resume(client: TestClient):
     resumed_payload = client.get(f"/api/v1/monitors/{monitor_id}").json()
     assert resumed_payload["enabled"] is True
     assert resumed_payload["status"] == "unknown"
+
+
+def test_dashboard_rejects_invalid_csrf_token(client: TestClient):
+    response = client.post(
+        "/login",
+        data={"username": "admin", "password": "admin", "csrf_token": "invalid"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 403
+
+
+def test_dashboard_monitor_form_uses_api_validation_rules(client: TestClient):
+    csrf_token = login(client)
+
+    response = client.post(
+        "/monitors",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Invalid URL",
+            "url": "example.test",
+            "method": "GET",
+            "expected_status": 200,
+            "interval_seconds": 60,
+            "timeout_seconds": 5,
+            "failure_threshold": 3,
+            "recovery_threshold": 2,
+            "enabled": "true",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "Enter a complete HTTP or HTTPS URL" in response.text
+    assert client.get("/api/v1/monitors").json() == []
+
+
+def test_dashboard_monitor_state_action_sets_flash_message(client: TestClient):
+    csrf_token = login(client)
+    created = client.post(
+        "/api/v1/monitors",
+        json={"name": "Demo", "url": "http://example.test", "method": "GET"},
+    )
+    monitor_id = created.json()["id"]
+
+    paused = client.post(
+        f"/monitors/{monitor_id}/state",
+        data={"csrf_token": csrf_token, "enabled": "false", "return_to": f"/monitors/{monitor_id}"},
+        follow_redirects=False,
+    )
+
+    assert paused.status_code == 303
+    assert paused.headers["location"] == f"/monitors/{monitor_id}"
+    detail_page = client.get(f"/monitors/{monitor_id}")
+    assert "was paused" in detail_page.text
+    assert client.get(f"/api/v1/monitors/{monitor_id}").json()["status"] == "paused"
+
+
+def test_dashboard_incident_actions_update_timeline(client: TestClient):
+    csrf_token = login(client)
+    db: Session = next(app.dependency_overrides[get_db]())
+    monitor = Monitor(name="Demo", url="http://example.test", method="GET")
+    db.add(monitor)
+    db.commit()
+    db.refresh(monitor)
+    incident = Incident(monitor_id=monitor.id, title="Demo failing", status="open", severity="warning")
+    db.add(incident)
+    db.commit()
+    db.refresh(incident)
+    incident_id = incident.id
+    db.close()
+
+    acknowledged = client.post(
+        f"/incidents/{incident_id}/acknowledge",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    assert acknowledged.status_code == 303
+
+    resolved = client.post(
+        f"/incidents/{incident_id}/resolve",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    assert resolved.status_code == 303
+
+    payload = client.get(f"/api/v1/incidents/{incident_id}").json()
+    assert payload["status"] == "resolved"
+    assert payload["acknowledged_at"] is not None
+    assert payload["resolved_at"] is not None
 
 
 def test_incident_patch_sets_acknowledged_timestamp(client: TestClient):

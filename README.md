@@ -17,7 +17,10 @@ Current version: `0.4.0`
 - stores current monitor state on each monitor
 - opens an incident after repeated failures
 - resolves an open incident after enough successful checks
-- shows monitors, checks, and incidents in a dark Tailwind dashboard
+- shows monitors, checks, and incidents in a responsive Tailwind and daisyUI dashboard
+- filters and paginates monitor and incident lists
+- protects dashboard forms with CSRF tokens
+- shows clear validation errors and action feedback
 - exposes `/metrics` in Prometheus text format
 - includes Prometheus and Grafana for local observability
 - collects container logs with Grafana Alloy and stores them in Loki
@@ -443,9 +446,52 @@ pytest
 
 ## UI
 
-The dashboard uses Jinja templates with Tailwind loaded from the CDN.
+The product dashboard uses:
 
-This keeps the current app simple because there is no Node build step yet. A later production pass should replace the CDN with a compiled Tailwind CSS file.
+- FastAPI dashboard routes
+- Jinja templates
+- Tailwind CSS 4
+- daisyUI components
+- a custom dark OpsWatch theme
+- a small vanilla JavaScript file for local times, form state, confirmation prompts, and overview refresh
+
+The dashboard remains server-rendered. React is not required for the current forms, tables, filters, and incident workflow.
+
+Tailwind and daisyUI are compiled into:
+
+```text
+src/opswatch/api/static/styles.css
+```
+
+The dashboard does not load Tailwind from a public CDN. The Dockerfile uses a Node build stage to install the locked frontend dependencies and compile the CSS. The final Python image receives only the generated stylesheet; Node is not a running production service.
+
+Static stylesheet and JavaScript URLs include a file-based version value so browsers request updated assets after a new image is deployed.
+
+Install frontend dependencies and build CSS locally:
+
+```powershell
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run css:build
+```
+
+Watch the templates and JavaScript while changing the UI:
+
+```powershell
+pnpm run css:watch
+```
+
+Important dashboard behavior:
+
+- the navigation changes to a mobile menu on narrow screens
+- monitor and incident lists support filters and pagination
+- monitor detail shows 24-hour health data and recent reliability
+- incident detail shows response actions and a timeline
+- settings stay collapsed until they are needed
+- deleting a monitor requires confirmation and happens only from its detail page
+- all HTML forms that change data require a CSRF token
+
+The OpsWatch dashboard and Grafana have different jobs. The product dashboard manages monitors and incidents. Grafana is the internal operations interface for metrics, logs, dashboards, and alerts.
 
 ## Naming Rules
 

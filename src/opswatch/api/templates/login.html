@@ -1,49 +1,39 @@
 <!doctype html>
-<html lang="en" class="bg-[#050807]">
+<html lang="en" data-theme="opswatch">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login - OpsWatch</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              ops: {
-                bg: "#050807",
-                panel: "#0e1511",
-                line: "#203126",
-                green: "#63d471",
-                muted: "#8fa39a",
-                text: "#e8f1ec",
-                red: "#ff5c5c"
-              }
-            }
-          }
-        }
-      }
-    </script>
-    <link rel="stylesheet" href="/static/styles.css">
+    <meta name="color-scheme" content="dark">
+    <title>Sign in - OpsWatch</title>
+    <link rel="stylesheet" href="/static/styles.css?v={{ static_asset_version }}">
+    <script src="/static/app.js?v={{ static_asset_version }}" defer></script>
   </head>
-  <body class="min-h-screen bg-ops-bg text-ops-text antialiased">
-    <main class="mx-auto grid min-h-screen max-w-md place-items-center px-6">
-      <section class="w-full rounded-lg border border-ops-line bg-ops-panel p-6 shadow-2xl shadow-black/40">
-        <div class="mb-6 flex items-center gap-3">
-          <span class="h-3 w-3 rounded-full bg-ops-green shadow-[0_0_18px_rgba(99,212,113,0.75)]"></span>
-          <h1 class="text-2xl font-semibold">OpsWatch</h1>
+  <body class="min-h-screen bg-base-100 text-base-content antialiased">
+    <main class="grid min-h-screen place-items-center px-4 py-10 sm:px-6">
+      <section class="w-full max-w-md rounded-box border border-base-300 bg-base-200 p-6 shadow-2xl shadow-black/35 sm:p-8">
+        <div class="mb-8">
+          <div class="flex items-center gap-3">
+            <span class="h-3 w-3 rounded-full bg-primary shadow-[0_0_18px_rgba(99,212,113,0.75)]"></span>
+            <h1 class="text-2xl font-semibold">OpsWatch</h1>
+          </div>
+          <p class="mt-3 text-sm leading-6 text-base-content/55">Sign in to manage monitors and respond to incidents.</p>
         </div>
-        <p class="mb-6 text-sm text-ops-muted">Local MVP admin login. Default credentials are admin/admin.</p>
-        {% if error %}<p class="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-ops-red">{{ error }}</p>{% endif %}
-        <form class="grid gap-4" action="/login" method="post">
-          <label class="grid gap-2 text-sm text-ops-muted">Username
-            <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="username" value="admin" required>
+        {% if error %}
+        <div class="alert mb-5 border border-error/35 bg-error/10 text-error" role="alert"><span>{{ error }}</span></div>
+        {% endif %}
+        <form class="grid gap-5" action="/login" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label class="form-control">
+            <span class="label pb-2"><span class="label-text font-medium">Username</span></span>
+            <input class="input input-bordered w-full" name="username" autocomplete="username" required autofocus>
           </label>
-          <label class="grid gap-2 text-sm text-ops-muted">Password
-            <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="password" type="password" required>
+          <label class="form-control">
+            <span class="label pb-2"><span class="label-text font-medium">Password</span></span>
+            <input class="input input-bordered w-full" name="password" type="password" autocomplete="current-password" required>
           </label>
-          <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Login</button>
+          <button class="btn btn-primary mt-1 w-full" data-submitting-label="Signing in…" type="submit">Sign in</button>
         </form>
+        <p class="mt-6 border-t border-base-300 pt-5 text-xs leading-5 text-base-content/45">Local development credentials are configured through environment variables.</p>
       </section>
     </main>
   </body>

@@ -1,62 +1,82 @@
 {% extends "base.html" %}
+{% from "macros.html" import csrf_input, incident_severity_badge, incident_status_badge, timestamp %}
 {% block title %}Incident {{ incident.id }} - OpsWatch{% endblock %}
 {% block content %}
-<div class="mb-8">
-  <p class="text-sm uppercase tracking-[0.2em] text-ops-green">Incident Detail</p>
-  <h1 class="mt-2 text-3xl font-semibold">{{ incident.title }}</h1>
+<nav class="mb-5 text-sm text-base-content/50" aria-label="Breadcrumb"><a class="link hover:text-primary" href="/incidents">Incidents</a><span class="mx-2">/</span><span aria-current="page">Incident {{ incident.id }}</span></nav>
+<div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+  <div class="min-w-0">
+    <div class="flex flex-wrap items-center gap-3"><h1 class="text-3xl font-semibold tracking-tight">{{ incident.title }}</h1>{{ incident_status_badge(incident.status) }}{{ incident_severity_badge(incident.severity) }}</div>
+    <p class="mt-2 text-sm text-base-content/55">Monitor: <a class="link link-primary" href="/monitors/{{ incident.monitor.id }}">{{ incident.monitor.name }}</a> · active for {{ format_duration(incident.started_at, incident.resolved_at) }}</p>
+  </div>
+  {% if incident.status != "resolved" %}
+  <div class="flex flex-wrap gap-2">
+    {% if incident.status == "open" %}
+    <form action="/incidents/{{ incident.id }}/acknowledge" method="post">
+      {{ csrf_input(csrf_token) }}
+      <button class="btn btn-outline btn-sm" type="submit">Acknowledge</button>
+    </form>
+    {% endif %}
+    <form action="/incidents/{{ incident.id }}/resolve" method="post" data-confirm="Mark this incident as resolved?">
+      {{ csrf_input(csrf_token) }}
+      <button class="btn btn-primary btn-sm" type="submit">Resolve incident</button>
+    </form>
+  </div>
+  {% endif %}
 </div>
 
-<section class="mb-6 grid gap-4 md:grid-cols-4">
-  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
-    <div class="text-sm text-ops-muted">Monitor</div>
-    <a class="mt-3 block text-ops-green hover:underline" href="/monitors/{{ incident.monitor.id }}">{{ incident.monitor.name }}</a>
-  </div>
-  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
-    <div class="text-sm text-ops-muted">Status</div>
-    <div class="mt-3 text-2xl font-semibold">{{ incident.status }}</div>
-  </div>
-  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
-    <div class="text-sm text-ops-muted">Started</div>
-    <div class="mt-3 text-sm">{{ incident.started_at }}</div>
-  </div>
-  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
-    <div class="text-sm text-ops-muted">Resolved</div>
-    <div class="mt-3 text-sm">{{ incident.resolved_at or "-" }}</div>
-  </div>
-</section>
+<div class="mb-6 grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.7fr)]">
+  <section class="ops-panel p-4 sm:p-5">
+    <p class="text-sm font-medium text-base-content/55">Failure reason</p>
+    <p class="mt-3 leading-6">{{ humanize_error(None, incident.failure_reason) if incident.failure_reason else "No failure reason was saved." }}</p>
+    <div class="mt-6 border-t border-base-300 pt-5">
+      <p class="text-sm font-medium text-base-content/55">Response notes</p>
+      {% if incident.notes %}<p class="mt-3 whitespace-pre-wrap text-sm leading-6">{{ incident.notes }}</p>{% else %}<p class="mt-3 text-sm text-base-content/45">No response notes have been added.</p>{% endif %}
+    </div>
+  </section>
 
-<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel p-5">
-  <div class="text-sm text-ops-muted">Failure Reason</div>
-  <p class="mt-3 text-sm">{{ incident.failure_reason or "-" }}</p>
-</section>
+  <section class="ops-panel p-4 sm:p-5">
+    <h2 class="font-semibold">Timeline</h2>
+    <ol class="mt-5 space-y-0">
+      <li class="relative flex gap-4 pb-6 before:absolute before:left-[7px] before:top-4 before:h-full before:w-px before:bg-base-300">
+        <span class="relative z-10 mt-1 h-4 w-4 shrink-0 rounded-full border-4 border-error bg-base-100"></span>
+        <div><p class="font-medium">Incident opened</p><p class="mt-1 text-xs text-base-content/50">{{ timestamp(incident.started_at) }}</p></div>
+      </li>
+      <li class="relative flex gap-4 pb-6 before:absolute before:left-[7px] before:top-4 before:h-full before:w-px before:bg-base-300">
+        <span class="relative z-10 mt-1 h-4 w-4 shrink-0 rounded-full border-4 {% if incident.acknowledged_at %}border-warning{% else %}border-base-300{% endif %} bg-base-100"></span>
+        <div><p class="font-medium {% if not incident.acknowledged_at %}text-base-content/40{% endif %}">Incident acknowledged</p><p class="mt-1 text-xs text-base-content/50">{{ timestamp(incident.acknowledged_at, "Not acknowledged") }}</p></div>
+      </li>
+      <li class="relative flex gap-4">
+        <span class="relative z-10 mt-1 h-4 w-4 shrink-0 rounded-full border-4 {% if incident.resolved_at %}border-success{% else %}border-base-300{% endif %} bg-base-100"></span>
+        <div><p class="font-medium {% if not incident.resolved_at %}text-base-content/40{% endif %}">Incident resolved</p><p class="mt-1 text-xs text-base-content/50">{{ timestamp(incident.resolved_at, "Not resolved") }}</p></div>
+      </li>
+    </ol>
+  </section>
+</div>
 
-<section class="rounded-lg border border-ops-line bg-ops-panel">
-  <div class="border-b border-ops-line px-5 py-4">
-    <h2 class="text-lg font-semibold">Edit Incident</h2>
-  </div>
-  <form class="grid gap-5 p-5" action="/incidents/{{ incident.id }}" method="post">
+<section class="ops-panel overflow-hidden">
+  <div class="border-b border-base-300 px-4 py-4 sm:px-5"><h2 class="font-semibold">Incident details</h2><p class="mt-1 text-xs text-base-content/45">Update severity, status, and response notes.</p></div>
+  <form class="grid gap-5 p-4 sm:p-5" action="/incidents/{{ incident.id }}" method="post">
+    {{ csrf_input(csrf_token) }}
     <div class="grid gap-4 md:grid-cols-2">
-      <label class="grid gap-2 text-sm text-ops-muted">Status
-        <select class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="status_value">
-          {% for value in ["open", "acknowledged", "resolved"] %}
-          <option value="{{ value }}" {% if incident.status == value %}selected{% endif %}>{{ value }}</option>
-          {% endfor %}
+      <label class="form-control">
+        <span class="label pb-2"><span class="label-text font-medium">Status</span></span>
+        <select class="select select-bordered w-full" name="status_value">
+          {% for value in ["open", "acknowledged", "resolved"] %}<option value="{{ value }}" {% if incident.status == value %}selected{% endif %}>{{ value | title }}</option>{% endfor %}
         </select>
       </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Severity
-        <select class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="severity">
-          {% for value in ["info", "warning", "critical"] %}
-          <option value="{{ value }}" {% if incident.severity == value %}selected{% endif %}>{{ value }}</option>
-          {% endfor %}
+      <label class="form-control">
+        <span class="label pb-2"><span class="label-text font-medium">Severity</span></span>
+        <select class="select select-bordered w-full" name="severity">
+          {% for value in ["info", "warning", "critical"] %}<option value="{{ value }}" {% if incident.severity == value %}selected{% endif %}>{{ value | title }}</option>{% endfor %}
         </select>
       </label>
     </div>
-    <label class="grid gap-2 text-sm text-ops-muted">Notes
-      <textarea class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="notes" rows="6">{{ incident.notes or "" }}</textarea>
+    <label class="form-control">
+      <span class="label pb-2"><span class="label-text font-medium">Response notes</span></span>
+      <textarea class="textarea textarea-bordered min-h-32 w-full" name="notes" maxlength="10000" placeholder="What was investigated, changed, or learned?">{{ incident.notes or "" }}</textarea>
+      <span class="ops-field-help">Keep this factual so another operator can understand the response.</span>
     </label>
-    <div class="flex justify-end">
-      <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Save Incident</button>
-    </div>
+    <div class="flex justify-end"><button class="btn btn-primary" data-submitting-label="Saving…" type="submit">Save details</button></div>
   </form>
 </section>
 {% endblock %}

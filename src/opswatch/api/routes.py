@@ -1,13 +1,25 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from opswatch.api.auth import is_authenticated, require_admin, require_dashboard_admin
+from opswatch.api.ui_helpers import (
+    build_template_context,
+    datetime_as_utc,
+    format_datetime_utc,
+    format_duration,
+    humanize_error,
+    monitor_form_values,
+    pagination_details,
+    require_valid_csrf_token,
+    set_flash_message,
+    validate_monitor_form,
+)
 from opswatch.config import get_settings
 from opswatch.database import get_db
 from opswatch.models import Incident, Monitor, MonitorCheck
@@ -22,9 +34,20 @@ from opswatch.schemas import (
     MonitorUpdate,
 )
 
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+templates = Jinja2Templates(
+    directory=str(Path(__file__).parent / "templates"),
+    context_processors=[build_template_context],
+)
+templates.env.filters["datetime_as_utc"] = datetime_as_utc
+templates.env.filters["format_datetime"] = format_datetime_utc
+templates.env.globals["format_duration"] = format_duration
+templates.env.globals["humanize_error"] = humanize_error
 dashboard_router = APIRouter()
 api_router = APIRouter(prefix="/api/v1")
+
+MONITORS_PER_PAGE = 12
+CHECKS_PER_PAGE = 20
+INCIDENTS_PER_PAGE = 15
 
 
 def status_for_enabled_change(enabled: bool, current_status: str | None = None) -> str:
@@ -55,20 +78,185 @@ def get_incident_or_404(db: Session, incident_id: int) -> Incident:
     return incident
 
 
+def build_monitor_list_context(
+    db: Session,
+    search: str = "",
+    status_filter: str = "",
+    page: int = 1,
+    form_values: dict | None = None,
+    form_errors: dict | None = None,
+) -> dict:
+    """Return monitor list, filter, pagination, and form values."""
+
+    query = select(Monitor)
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.where(or_(Monitor.name.ilike(search_pattern), Monitor.url.ilike(search_pattern)))
+    if status_filter in {"healthy", "degraded", "down", "unknown", "paused"}:
+        query = query.where(Monitor.status == status_filter)
+
+    total_items = db.scalar(select(func.count()).select_from(query.order_by(None).subquery())) or 0
+    pagination = pagination_details(total_items, page, MONITORS_PER_PAGE)
+    monitors = db.scalars(
+        query.order_by(Monitor.name)
+        .offset((int(pagination["current_page"]) - 1) * MONITORS_PER_PAGE)
+        .limit(MONITORS_PER_PAGE)
+    ).all()
+    return {
+        "monitors": monitors,
+        "search": search,
+        "status_filter": status_filter,
+        "pagination": pagination,
+        "form_values": form_values or monitor_form_values(),
+        "form_errors": form_errors or {},
+        "form_open": bool(form_errors),
+    }
+
+
+def build_monitor_detail_context(
+    db: Session,
+    monitor: Monitor,
+    check_page: int = 1,
+    form_values: dict | None = None,
+    form_errors: dict | None = None,
+) -> dict:
+    """Return monitor health, recent checks, incidents, and form values."""
+
+    one_day_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+    checks_24h = db.scalar(
+        select(func.count(MonitorCheck.id)).where(
+            MonitorCheck.monitor_id == monitor.id,
+            MonitorCheck.checked_at >= one_day_ago,
+        )
+    ) or 0
+    successful_checks_24h = db.scalar(
+        select(func.count(MonitorCheck.id)).where(
+            MonitorCheck.monitor_id == monitor.id,
+            MonitorCheck.checked_at >= one_day_ago,
+            MonitorCheck.success.is_(True),
+        )
+    ) or 0
+    average_response_time = db.scalar(
+        select(func.avg(MonitorCheck.response_time_ms)).where(
+            MonitorCheck.monitor_id == monitor.id,
+            MonitorCheck.checked_at >= one_day_ago,
+            MonitorCheck.response_time_ms.is_not(None),
+        )
+    )
+    last_success_at = db.scalar(
+        select(MonitorCheck.checked_at)
+        .where(MonitorCheck.monitor_id == monitor.id, MonitorCheck.success.is_(True))
+        .order_by(desc(MonitorCheck.checked_at), desc(MonitorCheck.id))
+        .limit(1)
+    )
+    active_incident = db.scalar(
+        select(Incident)
+        .where(Incident.monitor_id == monitor.id, Incident.status.in_(["open", "acknowledged"]))
+        .order_by(desc(Incident.started_at))
+        .limit(1)
+    )
+    total_checks = db.scalar(
+        select(func.count(MonitorCheck.id)).where(MonitorCheck.monitor_id == monitor.id)
+    ) or 0
+    pagination = pagination_details(total_checks, check_page, CHECKS_PER_PAGE)
+    checks = db.scalars(
+        select(MonitorCheck)
+        .where(MonitorCheck.monitor_id == monitor.id)
+        .order_by(desc(MonitorCheck.checked_at), desc(MonitorCheck.id))
+        .offset((int(pagination["current_page"]) - 1) * CHECKS_PER_PAGE)
+        .limit(CHECKS_PER_PAGE)
+    ).all()
+    check_history = db.scalars(
+        select(MonitorCheck)
+        .where(MonitorCheck.monitor_id == monitor.id)
+        .order_by(desc(MonitorCheck.checked_at), desc(MonitorCheck.id))
+        .limit(30)
+    ).all()
+    check_history.reverse()
+    incidents = db.scalars(
+        select(Incident)
+        .where(Incident.monitor_id == monitor.id)
+        .order_by(desc(Incident.started_at))
+        .limit(10)
+    ).all()
+
+    next_check_at = None
+    if monitor.enabled and monitor.last_checked_at:
+        next_check_at = monitor.last_checked_at + timedelta(seconds=monitor.interval_seconds)
+    availability_percent = round((successful_checks_24h / checks_24h) * 100, 1) if checks_24h else None
+    return {
+        "monitor": monitor,
+        "checks": checks,
+        "check_history": check_history,
+        "incidents": incidents,
+        "active_incident": active_incident,
+        "checks_24h": checks_24h,
+        "availability_percent": availability_percent,
+        "average_response_time_ms": round(average_response_time) if average_response_time is not None else None,
+        "last_success_at": last_success_at,
+        "next_check_at": next_check_at,
+        "pagination": pagination,
+        "form_values": form_values or monitor_form_values(monitor),
+        "form_errors": form_errors or {},
+        "form_open": bool(form_errors),
+    }
+
+
+def build_incident_list_context(
+    db: Session,
+    status_filter: str = "",
+    severity_filter: str = "",
+    page: int = 1,
+) -> dict:
+    """Return filtered and paginated incident values."""
+
+    query = select(Incident).options(selectinload(Incident.monitor))
+    if status_filter in {"open", "acknowledged", "resolved"}:
+        query = query.where(Incident.status == status_filter)
+    if severity_filter in {"info", "warning", "critical"}:
+        query = query.where(Incident.severity == severity_filter)
+    count_query = select(func.count(Incident.id))
+    if status_filter in {"open", "acknowledged", "resolved"}:
+        count_query = count_query.where(Incident.status == status_filter)
+    if severity_filter in {"info", "warning", "critical"}:
+        count_query = count_query.where(Incident.severity == severity_filter)
+    total_items = db.scalar(count_query) or 0
+    pagination = pagination_details(total_items, page, INCIDENTS_PER_PAGE)
+    incidents = db.scalars(
+        query.order_by(desc(Incident.started_at))
+        .offset((int(pagination["current_page"]) - 1) * INCIDENTS_PER_PAGE)
+        .limit(INCIDENTS_PER_PAGE)
+    ).all()
+    return {
+        "incidents": incidents,
+        "status_filter": status_filter,
+        "severity_filter": severity_filter,
+        "pagination": pagination,
+    }
+
+
 @dashboard_router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request) -> HTMLResponse:
     """Render the admin login page."""
 
+    if is_authenticated(request):
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse(request=request, name="login.html", context={"error": None})
 
 
 @dashboard_router.post("/login")
-def login(request: Request, username: str = Form(...), password: str = Form(...)):
+def login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    _: None = Depends(require_valid_csrf_token),
+):
     """Start an admin session when the credentials are valid."""
 
     settings = get_settings()
     if username == settings.admin_username and password == settings.admin_password:
         request.session["admin_authenticated"] = True
+        set_flash_message(request, "Signed in successfully.")
         return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse(
         request=request,
@@ -79,7 +267,11 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
 
 
 @dashboard_router.post("/logout")
-def logout(request: Request):
+def logout(
+    request: Request,
+    _: None = Depends(require_dashboard_admin),
+    __: None = Depends(require_valid_csrf_token),
+):
     """Clear the admin session and return to the login page."""
 
     request.session.clear()
@@ -98,7 +290,7 @@ def overview_page(request: Request, db: Session = Depends(get_db), _: None = Dep
         "paused": sum(monitor.status == "paused" for monitor in monitors),
         "unknown": sum(monitor.status == "unknown" for monitor in monitors),
     }
-    open_incidents = db.scalars(
+    active_incidents = db.scalars(
         select(Incident)
         .options(selectinload(Incident.monitor))
         .where(Incident.status.in_(["open", "acknowledged"]))
@@ -116,89 +308,88 @@ def overview_page(request: Request, db: Session = Depends(get_db), _: None = Dep
         context={
             "monitors": monitors,
             "monitor_status_counts": monitor_status_counts,
-            "open_incidents": open_incidents,
+            "active_incidents": active_incidents,
+            "total_monitors": len(monitors),
+            "monitors_needing_attention": monitor_status_counts["degraded"] + monitor_status_counts["down"],
             "recent_checks": recent_checks,
-            "authenticated": is_authenticated(request),
+            "page_loaded_at": datetime.now(timezone.utc),
         },
     )
 
 
 @dashboard_router.get("/monitors", response_class=HTMLResponse)
-def monitors_page(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
-    """Render the monitor list page."""
-
-    monitors = db.scalars(select(Monitor).order_by(Monitor.name)).all()
-    return templates.TemplateResponse(request=request, name="monitors.html", context={"monitors": monitors})
-
-
-@dashboard_router.post("/monitors")
-def create_monitor_form(
+def monitors_page(
     request: Request,
-    name: str = Form(...),
-    url: str = Form(...),
-    method: str = Form("GET"),
-    expected_status: int = Form(200),
-    expected_body: str = Form(""),
-    interval_seconds: int = Form(60),
-    timeout_seconds: int = Form(5),
-    failure_threshold: int = Form(3),
-    recovery_threshold: int = Form(2),
-    enabled: bool = Form(False),
+    search: str = Query(default="", max_length=120),
+    status_filter: str = Query(default="", alias="status"),
+    page: int = Query(default=1, ge=1),
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
+    """Render the monitor list page."""
+
+    context = build_monitor_list_context(db, search.strip(), status_filter, page)
+    return templates.TemplateResponse(request=request, name="monitors.html", context=context)
+
+
+@dashboard_router.post("/monitors")
+async def create_monitor_form(
+    request: Request,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_dashboard_admin),
+    __: None = Depends(require_valid_csrf_token),
+):
     """Create a monitor from the dashboard form."""
 
-    monitor = Monitor(
-        name=name,
-        url=url,
-        method=method.upper(),
-        expected_status=expected_status,
-        expected_body=expected_body or None,
-        interval_seconds=interval_seconds,
-        timeout_seconds=timeout_seconds,
-        failure_threshold=failure_threshold,
-        recovery_threshold=recovery_threshold,
-        enabled=enabled,
-        status=status_for_enabled_change(enabled),
-    )
+    payload, form_values, form_errors = await validate_monitor_form(request)
+    if payload is None:
+        context = build_monitor_list_context(db, form_values=form_values, form_errors=form_errors)
+        return templates.TemplateResponse(
+            request=request,
+            name="monitors.html",
+            context=context,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        )
+    monitor = Monitor(**payload.model_dump())
+    monitor.status = status_for_enabled_change(monitor.enabled)
     db.add(monitor)
     db.commit()
+    set_flash_message(request, f"Monitor '{monitor.name}' was created.")
     return RedirectResponse("/monitors", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @dashboard_router.post("/monitors/{monitor_id}")
-def update_monitor_form(
+async def update_monitor_form(
+    request: Request,
     monitor_id: int,
-    name: str = Form(...),
-    url: str = Form(...),
-    method: str = Form("GET"),
-    expected_status: int = Form(200),
-    expected_body: str = Form(""),
-    interval_seconds: int = Form(60),
-    timeout_seconds: int = Form(5),
-    failure_threshold: int = Form(3),
-    recovery_threshold: int = Form(2),
-    enabled: bool = Form(False),
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
+    __: None = Depends(require_valid_csrf_token),
 ):
     """Update a monitor from the dashboard form."""
 
     monitor = get_monitor_or_404(db, monitor_id)
-    monitor.name = name
-    monitor.url = url
-    monitor.method = method.upper()
-    monitor.expected_status = expected_status
-    monitor.expected_body = expected_body or None
-    monitor.interval_seconds = interval_seconds
-    monitor.timeout_seconds = timeout_seconds
-    monitor.failure_threshold = failure_threshold
-    monitor.recovery_threshold = recovery_threshold
-    if monitor.enabled != enabled:
-        monitor.enabled = enabled
-        monitor.status = status_for_enabled_change(enabled, monitor.status)
+    payload, form_values, form_errors = await validate_monitor_form(request)
+    if payload is None:
+        context = build_monitor_detail_context(
+            db,
+            monitor,
+            form_values=form_values,
+            form_errors=form_errors,
+        )
+        return templates.TemplateResponse(
+            request=request,
+            name="monitor_detail.html",
+            context=context,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        )
+    previous_enabled = monitor.enabled
+    for field_name, value in payload.model_dump().items():
+        setattr(monitor, field_name, value)
+    if previous_enabled != monitor.enabled:
+        monitor.status = status_for_enabled_change(monitor.enabled, monitor.status)
     db.commit()
+    set_flash_message(request, f"Monitor '{monitor.name}' was updated.")
     return RedirectResponse(f"/monitors/{monitor_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -206,60 +397,94 @@ def update_monitor_form(
 def monitor_detail_page(
     request: Request,
     monitor_id: int,
+    check_page: int = Query(default=1, ge=1),
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
 ):
     """Render one monitor with its checks and incidents."""
 
     monitor = get_monitor_or_404(db, monitor_id)
-    checks = db.scalars(
-        select(MonitorCheck)
-        .where(MonitorCheck.monitor_id == monitor_id)
-        .order_by(desc(MonitorCheck.checked_at), desc(MonitorCheck.id))
-        .limit(50)
-    ).all()
-    incidents = db.scalars(
-        select(Incident).where(Incident.monitor_id == monitor_id).order_by(desc(Incident.started_at)).limit(20)
-    ).all()
+    context = build_monitor_detail_context(db, monitor, check_page)
     return templates.TemplateResponse(
         request=request,
         name="monitor_detail.html",
-        context={"monitor": monitor, "checks": checks, "incidents": incidents},
+        context=context,
     )
 
 
 @dashboard_router.post("/monitors/{monitor_id}/check")
 def run_manual_monitor_check_form(
+    request: Request,
     monitor_id: int,
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
+    __: None = Depends(require_valid_csrf_token),
 ):
     """Run one monitor check from the dashboard."""
 
     monitor = get_monitor_or_404(db, monitor_id)
     result = check_monitor_endpoint(monitor)
     record_monitor_check_result(db, monitor, result)
+    if result.success:
+        set_flash_message(request, "Manual check completed successfully.")
+    else:
+        set_flash_message(request, "Manual check failed. The result was saved.", "warning")
     return RedirectResponse(f"/monitors/{monitor_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
+@dashboard_router.post("/monitors/{monitor_id}/state")
+def change_monitor_enabled_state(
+    request: Request,
+    monitor_id: int,
+    enabled: bool = Form(...),
+    return_to: str = Form("/monitors"),
+    db: Session = Depends(get_db),
+    _: None = Depends(require_dashboard_admin),
+    __: None = Depends(require_valid_csrf_token),
+):
+    """Pause or resume a monitor from the dashboard."""
+
+    monitor = get_monitor_or_404(db, monitor_id)
+    monitor.enabled = enabled
+    monitor.status = status_for_enabled_change(enabled, monitor.status)
+    db.commit()
+    action = "resumed" if enabled else "paused"
+    set_flash_message(request, f"Monitor '{monitor.name}' was {action}.")
+    redirect_path = return_to if return_to.startswith("/monitors") else "/monitors"
+    return RedirectResponse(redirect_path, status_code=status.HTTP_303_SEE_OTHER)
+
+
 @dashboard_router.post("/monitors/{monitor_id}/delete")
-def delete_monitor_form(monitor_id: int, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
+def delete_monitor_form(
+    request: Request,
+    monitor_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_dashboard_admin),
+    __: None = Depends(require_valid_csrf_token),
+):
     """Delete a monitor from the dashboard."""
 
     monitor = get_monitor_or_404(db, monitor_id)
+    monitor_name = monitor.name
     db.delete(monitor)
     db.commit()
+    set_flash_message(request, f"Monitor '{monitor_name}' was deleted.", "warning")
     return RedirectResponse("/monitors", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @dashboard_router.get("/incidents", response_class=HTMLResponse)
-def incidents_page(request: Request, db: Session = Depends(get_db), _: None = Depends(require_dashboard_admin)):
+def incidents_page(
+    request: Request,
+    status_filter: str = Query(default="", alias="status"),
+    severity_filter: str = Query(default="", alias="severity"),
+    page: int = Query(default=1, ge=1),
+    db: Session = Depends(get_db),
+    _: None = Depends(require_dashboard_admin),
+):
     """Render the incident list page."""
 
-    incidents = db.scalars(
-        select(Incident).options(selectinload(Incident.monitor)).order_by(desc(Incident.started_at))
-    ).all()
-    return templates.TemplateResponse(request=request, name="incidents.html", context={"incidents": incidents})
+    context = build_incident_list_context(db, status_filter, severity_filter, page)
+    return templates.TemplateResponse(request=request, name="incidents.html", context=context)
 
 
 @dashboard_router.get("/incidents/{incident_id}", response_class=HTMLResponse)
@@ -277,16 +502,22 @@ def incident_detail_page(
 
 @dashboard_router.post("/incidents/{incident_id}")
 def update_incident_form(
+    request: Request,
     incident_id: int,
     status_value: str = Form(...),
     severity: str = Form("warning"),
     notes: str = Form(""),
     db: Session = Depends(get_db),
     _: None = Depends(require_dashboard_admin),
+    __: None = Depends(require_valid_csrf_token),
 ):
     """Update an incident from the dashboard form."""
 
     incident = get_incident_or_404(db, incident_id)
+    if status_value not in {"open", "acknowledged", "resolved"}:
+        raise HTTPException(status_code=422, detail="Invalid incident status")
+    if severity not in {"info", "warning", "critical"}:
+        raise HTTPException(status_code=422, detail="Invalid incident severity")
     incident.status = status_value
     incident.severity = severity
     incident.notes = notes or None
@@ -294,7 +525,52 @@ def update_incident_form(
         incident.acknowledged_at = datetime.now(timezone.utc)
     if status_value == "resolved" and incident.resolved_at is None:
         incident.resolved_at = datetime.now(timezone.utc)
+    if status_value != "resolved":
+        incident.resolved_at = None
     db.commit()
+    set_flash_message(request, "Incident details were updated.")
+    return RedirectResponse(f"/incidents/{incident_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@dashboard_router.post("/incidents/{incident_id}/acknowledge")
+def acknowledge_incident_form(
+    request: Request,
+    incident_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_dashboard_admin),
+    __: None = Depends(require_valid_csrf_token),
+):
+    """Mark an open incident as acknowledged."""
+
+    incident = get_incident_or_404(db, incident_id)
+    if incident.status == "open":
+        incident.status = "acknowledged"
+        incident.acknowledged_at = datetime.now(timezone.utc)
+        db.commit()
+        set_flash_message(request, "Incident was acknowledged.")
+    else:
+        set_flash_message(request, "Only an open incident can be acknowledged.", "warning")
+    return RedirectResponse(f"/incidents/{incident_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@dashboard_router.post("/incidents/{incident_id}/resolve")
+def resolve_incident_form(
+    request: Request,
+    incident_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_dashboard_admin),
+    __: None = Depends(require_valid_csrf_token),
+):
+    """Mark an active incident as resolved."""
+
+    incident = get_incident_or_404(db, incident_id)
+    if incident.status in {"open", "acknowledged"}:
+        incident.status = "resolved"
+        incident.resolved_at = datetime.now(timezone.utc)
+        db.commit()
+        set_flash_message(request, "Incident was resolved.")
+    else:
+        set_flash_message(request, "This incident is already resolved.", "warning")
     return RedirectResponse(f"/incidents/{incident_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 

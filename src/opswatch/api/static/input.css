@@ -1,0 +1,127 @@
+@import "tailwindcss" source(none);
+@source "../templates/**/*.html";
+@source "./app.js";
+@plugin "daisyui" {
+  themes: false;
+  logs: false;
+}
+@plugin "daisyui/theme" {
+  name: "opswatch";
+  default: true;
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: #050807;
+  --color-base-200: #0a110d;
+  --color-base-300: #111b15;
+  --color-base-content: #e8f1ec;
+  --color-primary: #63d471;
+  --color-primary-content: #041007;
+  --color-secondary: #173e24;
+  --color-secondary-content: #d8fbe0;
+  --color-accent: #8ce99a;
+  --color-accent-content: #041007;
+  --color-neutral: #17231b;
+  --color-neutral-content: #dbe9df;
+  --color-info: #60a5fa;
+  --color-info-content: #061323;
+  --color-success: #63d471;
+  --color-success-content: #041007;
+  --color-warning: #f4b740;
+  --color-warning-content: #1d1200;
+  --color-error: #ff5c5c;
+  --color-error-content: #230505;
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.625rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: var(--color-base-100);
+    color-scheme: dark;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    overflow-x: hidden;
+  }
+
+  body {
+    margin: 0;
+    min-width: 0;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .ops-panel {
+    @apply rounded-box border border-base-300 bg-base-200;
+  }
+
+  .ops-table th {
+    @apply bg-base-300/70 text-xs font-semibold tracking-wide text-base-content/60 uppercase;
+  }
+
+  .ops-table tbody tr {
+    @apply border-base-300 transition-colors hover:bg-base-300/45;
+  }
+
+  .ops-field-help {
+    @apply mt-1 text-xs text-base-content/55;
+  }
+
+  .ops-field-error {
+    @apply mt-1 text-xs text-error;
+  }
+
+  .ops-eyebrow {
+    @apply text-xs font-semibold tracking-[0.2em] text-primary uppercase;
+  }
+
+  .ops-stat-value {
+    @apply mt-2 text-3xl font-semibold tracking-tight;
+  }
+
+  .ops-mobile-row {
+    @apply border-b border-base-300 px-4 py-4 last:border-b-0;
+  }
+}
+
+.ops-check-bar {
+  min-height: 0.45rem;
+}
+
+::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050807;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #203126;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #31503b;
+}
