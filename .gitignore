@@ -3,10 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 todo.txt
+logs.txt
 observabilityInApp.txt
 # C extensions
 *.so
-
+node_modules/
+.pnpm-store/
 # Distribution / packaging
 .Python
 build/

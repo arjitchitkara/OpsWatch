@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from urllib.parse import urlsplit
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class MonitorBase(BaseModel):
@@ -16,6 +18,16 @@ class MonitorBase(BaseModel):
     failure_threshold: int = Field(default=3, ge=1, le=20)
     recovery_threshold: int = Field(default=2, ge=1, le=20)
     enabled: bool = True
+
+    @field_validator("url")
+    @classmethod
+    def validate_http_url(cls, value: str) -> str:
+        """Require a complete HTTP or HTTPS URL."""
+
+        parsed_url = urlsplit(value)
+        if parsed_url.scheme not in {"http", "https"} or not parsed_url.hostname:
+            raise ValueError("Enter a complete HTTP or HTTPS URL")
+        return value
 
 
 class MonitorCreate(MonitorBase):
@@ -37,6 +49,18 @@ class MonitorUpdate(BaseModel):
     failure_threshold: int | None = Field(default=None, ge=1, le=20)
     recovery_threshold: int | None = Field(default=None, ge=1, le=20)
     enabled: bool | None = None
+
+    @field_validator("url")
+    @classmethod
+    def validate_http_url(cls, value: str | None) -> str | None:
+        """Require a complete HTTP or HTTPS URL when one is provided."""
+
+        if value is None:
+            return value
+        parsed_url = urlsplit(value)
+        if parsed_url.scheme not in {"http", "https"} or not parsed_url.hostname:
+            raise ValueError("Enter a complete HTTP or HTTPS URL")
+        return value
 
 
 class MonitorRead(MonitorBase):

@@ -7,7 +7,7 @@ import os
 class Settings:
     """Runtime settings loaded from environment variables."""
 
-    app_version: str = "0.3.1"
+    app_version: str = "0.4.0"
     git_sha: str = "local"
     admin_username: str = "admin"
     admin_password: str = "admin"
@@ -15,6 +15,7 @@ class Settings:
     database_url: str = "postgresql+psycopg://opswatch:opswatch@localhost:6432/opswatch"
     migration_database_url: str = "postgresql+psycopg://opswatch:opswatch@localhost:5432/opswatch"
     worker_poll_seconds: int = 5
+    worker_metrics_port: int = 9100
 
 
 def _int_env(name: str, default: int) -> int:
@@ -34,7 +35,7 @@ def get_settings() -> Settings:
     """Return cached application settings."""
 
     return Settings(
-        app_version=os.getenv("APP_VERSION", "0.3.1"),
+        app_version=os.getenv("APP_VERSION", "0.4.0"),
         git_sha=os.getenv("GIT_SHA", "local"),
         admin_username=os.getenv("ADMIN_USERNAME", "admin"),
         admin_password=os.getenv("ADMIN_PASSWORD", "admin"),
@@ -48,4 +49,5 @@ def get_settings() -> Settings:
             "postgresql+psycopg://opswatch:opswatch@localhost:5432/opswatch",
         ),
         worker_poll_seconds=_int_env("WORKER_POLL_SECONDS", 5),
+        worker_metrics_port=_int_env("WORKER_METRICS_PORT", 9100),
     )

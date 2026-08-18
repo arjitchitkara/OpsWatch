@@ -1,0 +1,14 @@
+{
+  "name": "opswatch-ui",
+  "private": true,
+  "scripts": {
+    "css:build": "tailwindcss -i ./src/opswatch/api/static/input.css -o ./src/opswatch/api/static/styles.css --minify",
+    "css:watch": "tailwindcss -i ./src/opswatch/api/static/input.css -o ./src/opswatch/api/static/styles.css --watch"
+  },
+  "packageManager": "pnpm@11.19.0",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "daisyui": "^5.7.17",
+    "tailwindcss": "^4.3.3"
+  }
+}

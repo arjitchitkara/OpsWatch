@@ -1,151 +1,168 @@
 {% extends "base.html" %}
-{% from "macros.html" import check_result_badge, monitor_status_badge %}
+{% from "macros.html" import check_result_badge, csrf_input, empty_state, incident_severity_badge, incident_status_badge, monitor_status_badge, pagination_controls, timestamp %}
 {% block title %}{{ monitor.name }} - OpsWatch{% endblock %}
 {% block content %}
-<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
-  <div>
-    <p class="text-sm uppercase tracking-[0.2em] text-ops-green">Monitor Detail</p>
-    <h1 class="mt-2 text-3xl font-semibold">{{ monitor.name }}</h1>
+<nav class="mb-5 text-sm text-base-content/50" aria-label="Breadcrumb"><a class="link hover:text-primary" href="/monitors">Monitors</a><span class="mx-2">/</span><span aria-current="page">{{ monitor.name }}</span></nav>
+<div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+  <div class="min-w-0">
+    <div class="flex flex-wrap items-center gap-3"><h1 class="truncate text-3xl font-semibold tracking-tight">{{ monitor.name }}</h1>{{ monitor_status_badge(monitor.status) }}</div>
+    <p class="mt-2 break-all text-sm text-base-content/55">{{ monitor.url }}</p>
   </div>
   <div class="flex flex-wrap gap-2">
-    <form action="/monitors/{{ monitor.id }}/check" method="post">
-      <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Run Check</button>
+    <form action="/monitors/{{ monitor.id }}/state" method="post">
+      {{ csrf_input(csrf_token) }}
+      <input type="hidden" name="return_to" value="/monitors/{{ monitor.id }}">
+      <input type="hidden" name="enabled" value="{{ 'false' if monitor.enabled else 'true' }}">
+      <button class="btn btn-outline btn-sm" type="submit">{{ "Pause monitor" if monitor.enabled else "Resume monitor" }}</button>
     </form>
-    <a class="rounded-md border border-ops-line px-4 py-2 text-sm font-semibold text-ops-muted hover:border-ops-green hover:text-ops-green" href="/api/v1/monitors/{{ monitor.id }}/checks">Checks JSON</a>
+    <form action="/monitors/{{ monitor.id }}/check" method="post">
+      {{ csrf_input(csrf_token) }}
+      <button class="btn btn-primary btn-sm" data-submitting-label="Running…" type="submit">Run check now</button>
+    </form>
   </div>
 </div>
 
-<section class="mb-6 grid gap-4 md:grid-cols-3 xl:grid-cols-5">
-  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
-    <div class="text-sm text-ops-muted">Status</div>
-    <div class="mt-3">{{ monitor_status_badge(monitor.status) }}</div>
+{% if active_incident %}
+<section class="alert mb-6 items-start border border-error/35 bg-error/10 text-error">
+  <svg aria-hidden="true" viewBox="0 0 24 24" class="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.6 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/></svg>
+  <div class="min-w-0 flex-1">
+    <div class="flex flex-wrap items-center gap-2"><h2 class="font-semibold">Active incident</h2>{{ incident_status_badge(active_incident.status) }}{{ incident_severity_badge(active_incident.severity) }}</div>
+    <p class="mt-2 text-sm text-error/80">{{ active_incident.title }} · active for {{ format_duration(active_incident.started_at) }}</p>
   </div>
-  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
-    <div class="text-sm text-ops-muted">URL</div>
-    <div class="mt-3 break-all text-sm">{{ monitor.url }}</div>
-  </div>
-  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
-    <div class="text-sm text-ops-muted">Expected</div>
-    <div class="mt-3 text-2xl font-semibold">{{ monitor.method }} {{ monitor.expected_status }}</div>
-  </div>
-  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
-    <div class="text-sm text-ops-muted">Schedule</div>
-    <div class="mt-3 text-2xl font-semibold">{{ monitor.interval_seconds }}s</div>
-    <div class="mt-1 text-sm text-ops-muted">fail {{ monitor.failure_threshold }}, recover {{ monitor.recovery_threshold }}</div>
-  </div>
-  <div class="rounded-lg border border-ops-line bg-ops-panel p-5">
-    <div class="text-sm text-ops-muted">Last Check</div>
-    <div class="mt-3 text-sm">{{ monitor.last_checked_at or "-" }}</div>
-    <div class="mt-1 text-sm text-ops-muted">{% if monitor.last_response_time_ms is not none %}{{ monitor.last_response_time_ms }} ms{% else %}-{% endif %}</div>
-  </div>
+  <a class="btn btn-error btn-sm" href="/incidents/{{ active_incident.id }}">Respond</a>
+</section>
+{% endif %}
+
+<section class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Monitor health summary">
+  <div class="ops-panel p-4 sm:p-5"><p class="text-sm text-base-content/55">24-hour availability</p><p class="ops-stat-value {% if availability_percent is not none and availability_percent < 100 %}text-warning{% else %}text-success{% endif %}">{{ availability_percent ~ "%" if availability_percent is not none else "-" }}</p><p class="mt-2 text-xs text-base-content/45">{{ checks_24h }} saved checks</p></div>
+  <div class="ops-panel p-4 sm:p-5"><p class="text-sm text-base-content/55">Average latency</p><p class="ops-stat-value">{{ average_response_time_ms ~ " ms" if average_response_time_ms is not none else "-" }}</p><p class="mt-2 text-xs text-base-content/45">Last 24 hours</p></div>
+  <div class="ops-panel p-4 sm:p-5"><p class="text-sm text-base-content/55">Last success</p><p class="mt-3 text-sm font-semibold">{{ timestamp(last_success_at, "No success recorded") }}</p><p class="mt-2 text-xs text-base-content/45">Latest passing result</p></div>
+  <div class="ops-panel p-4 sm:p-5"><p class="text-sm text-base-content/55">Next scheduled check</p><p class="mt-3 text-sm font-semibold">{{ timestamp(next_check_at, "Waiting for worker") if monitor.enabled else "Monitor paused" }}</p><p class="mt-2 text-xs text-base-content/45">Every {{ monitor.interval_seconds }} seconds</p></div>
 </section>
 
-<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel p-5">
-  <div class="text-sm text-ops-muted">Last Error</div>
-  <p class="mt-3 text-sm">{{ monitor.last_error_message or monitor.last_error_type or "-" }}</p>
-</section>
-
-<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
-  <div class="border-b border-ops-line px-5 py-4">
-    <h2 class="text-lg font-semibold">Edit Monitor</h2>
+<section class="ops-panel mb-6 p-4 sm:p-5">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div><h2 class="font-semibold">Recent reliability</h2><p class="mt-1 text-xs text-base-content/45">Newest result appears on the right. Up to 30 checks are shown.</p></div>
+    <p class="text-xs text-base-content/45">{{ monitor.method }} · expect HTTP {{ monitor.expected_status }} · timeout {{ monitor.timeout_seconds }}s</p>
   </div>
-  <form class="grid gap-5 p-5" action="/monitors/{{ monitor.id }}" method="post">
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <label class="grid gap-2 text-sm text-ops-muted">Name
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="name" value="{{ monitor.name }}" required>
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted xl:col-span-2">URL
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="url" value="{{ monitor.url }}" required>
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Method
-        <select class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="method">
-          {% for value in ["GET", "HEAD"] %}
-          <option value="{{ value }}" {% if monitor.method == value %}selected{% endif %}>{{ value }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Expected Status
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_status" type="number" value="{{ monitor.expected_status }}">
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Interval Seconds
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="interval_seconds" type="number" value="{{ monitor.interval_seconds }}">
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Timeout Seconds
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="timeout_seconds" type="number" value="{{ monitor.timeout_seconds }}">
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Failure Threshold
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="failure_threshold" type="number" value="{{ monitor.failure_threshold }}">
-      </label>
-      <label class="grid gap-2 text-sm text-ops-muted">Recovery Threshold
-        <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="recovery_threshold" type="number" value="{{ monitor.recovery_threshold }}">
-      </label>
-    </div>
-    <label class="grid gap-2 text-sm text-ops-muted">Expected Body
-      <input class="rounded-md border border-ops-line bg-[#07100b] px-3 py-2 text-ops-text outline-none focus:border-ops-green" name="expected_body" value="{{ monitor.expected_body or '' }}" placeholder="optional substring">
-    </label>
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <label class="flex items-center gap-2 text-sm text-ops-muted">
-        <input class="h-4 w-4 accent-ops-green" name="enabled" type="checkbox" value="true" {% if monitor.enabled %}checked{% endif %}>
-        Enabled
-      </label>
-      <button class="rounded-md bg-ops-green px-4 py-2 text-sm font-semibold text-[#041007] hover:bg-[#7be786]" type="submit">Save Monitor</button>
-    </div>
-  </form>
+  {% if check_history %}
+  <div class="mt-5 flex gap-1" role="img" aria-label="Recent check results">
+    {% for check in check_history %}
+    <span class="ops-check-bar min-w-1 flex-1 rounded-sm {% if check.success %}bg-success{% else %}bg-error{% endif %}" title="{{ check.checked_at | format_datetime }} — {{ 'Passed' if check.success else humanize_error(check.error_type, check.error_message) }}"></span>
+    {% endfor %}
+  </div>
+  <div class="mt-3 flex justify-between text-xs text-base-content/40"><span>Older</span><span>Newer</span></div>
+  {% else %}
+  <p class="mt-5 text-sm text-base-content/55">No check history is available yet.</p>
+  {% endif %}
 </section>
 
-<section class="mb-6 rounded-lg border border-ops-line bg-ops-panel">
-  <div class="border-b border-ops-line px-5 py-4">
-    <h2 class="text-lg font-semibold">Recent Checks</h2>
+{% if monitor.last_error_type or monitor.last_error_message %}
+<section class="alert mb-6 items-start border border-error/30 bg-error/10 text-error">
+  <svg aria-hidden="true" viewBox="0 0 24 24" class="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4m0 4h.01M4.9 19h14.2a2 2 0 0 0 1.7-3l-7.1-12a2 2 0 0 0-3.4 0L3.2 16a2 2 0 0 0 1.7 3Z"/></svg>
+  <div><h2 class="font-semibold">Latest failure</h2><p class="mt-1 text-sm text-error/80">{{ humanize_error(monitor.last_error_type, monitor.last_error_message) }}</p></div>
+</section>
+{% endif %}
+
+<section class="ops-panel mb-6 overflow-hidden">
+  <div class="flex items-center justify-between border-b border-base-300 px-4 py-4 sm:px-5">
+    <div><h2 class="font-semibold">Check history</h2><p class="mt-1 text-xs text-base-content/45">Saved results in newest-first order.</p></div>
+    <a class="link link-primary text-sm" href="/api/v1/monitors/{{ monitor.id }}/checks">JSON API</a>
   </div>
   {% if checks %}
-  <div class="overflow-x-auto">
-    <table class="w-full text-left text-sm">
-      <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
-        <tr><th class="px-5 py-3">Result</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Latency</th><th class="px-5 py-3">Error</th><th class="px-5 py-3">Message</th><th class="px-5 py-3">Checked</th></tr>
-      </thead>
-      <tbody class="divide-y divide-ops-line">
+  <div class="hidden overflow-x-auto md:block">
+    <table class="table ops-table">
+      <thead><tr><th>Result</th><th>HTTP</th><th>Latency</th><th>Detail</th><th>Checked</th></tr></thead>
+      <tbody>
         {% for check in checks %}
-        <tr class="hover:bg-ops-panel2/70">
-          <td class="px-5 py-4">{{ check_result_badge(check.success) }}</td>
-          <td class="px-5 py-4">{{ check.status_code or "-" }}</td>
-          <td class="px-5 py-4">{% if check.response_time_ms is not none %}{{ check.response_time_ms }} ms{% else %}-{% endif %}</td>
-          <td class="px-5 py-4 text-ops-muted">{{ check.error_type or "-" }}</td>
-          <td class="px-5 py-4 text-ops-muted">{{ check.error_message or "-" }}</td>
-          <td class="px-5 py-4 text-ops-muted">{{ check.checked_at }}</td>
+        <tr>
+          <td>{{ check_result_badge(check.success) }}</td>
+          <td>{{ check.status_code or "-" }}</td>
+          <td>{% if check.response_time_ms is not none %}{{ check.response_time_ms }} ms{% else %}-{% endif %}</td>
+          <td class="max-w-md text-base-content/55">{{ "Request matched expectations" if check.success else humanize_error(check.error_type, check.error_message) }}</td>
+          <td class="text-base-content/55">{{ timestamp(check.checked_at) }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  <div class="md:hidden">
+    {% for check in checks %}
+    <article class="ops-mobile-row">
+      <div class="flex items-start justify-between gap-3">{{ check_result_badge(check.success) }}<span class="text-xs text-base-content/45">{{ timestamp(check.checked_at) }}</span></div>
+      <p class="mt-3 text-sm">{{ check.status_code or "No HTTP status" }}{% if check.response_time_ms is not none %} · {{ check.response_time_ms }} ms{% endif %}</p>
+      <p class="mt-2 text-sm text-base-content/55">{{ "Request matched expectations" if check.success else humanize_error(check.error_type, check.error_message) }}</p>
+    </article>
+    {% endfor %}
+  </div>
+  {{ pagination_controls(pagination, "/monitors/" ~ monitor.id, "", "check_page") }}
   {% else %}
-  <p class="px-5 py-8 text-sm text-ops-muted">No checks recorded.</p>
+    {{ empty_state("No checks recorded", "Run a manual check or wait for the worker to run the first scheduled check.") }}
   {% endif %}
 </section>
 
-<section class="rounded-lg border border-ops-line bg-ops-panel">
-  <div class="border-b border-ops-line px-5 py-4">
-    <h2 class="text-lg font-semibold">Incidents</h2>
-  </div>
+<section class="ops-panel mb-6 overflow-hidden">
+  <div class="flex items-center justify-between border-b border-base-300 px-4 py-4 sm:px-5"><div><h2 class="font-semibold">Incident history</h2><p class="mt-1 text-xs text-base-content/45">Up to 10 recent incidents for this monitor.</p></div></div>
   {% if incidents %}
-  <div class="overflow-x-auto">
-    <table class="w-full text-left text-sm">
-      <thead class="bg-ops-panel2 text-xs uppercase tracking-wide text-ops-muted">
-        <tr><th class="px-5 py-3">Title</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Started</th><th class="px-5 py-3">Resolved</th></tr>
-      </thead>
-      <tbody class="divide-y divide-ops-line">
+  <div class="hidden overflow-x-auto md:block">
+    <table class="table ops-table">
+      <thead><tr><th>Incident</th><th>Severity</th><th>Status</th><th>Started</th><th>Duration</th></tr></thead>
+      <tbody>
         {% for incident in incidents %}
-        <tr class="hover:bg-ops-panel2/70">
-          <td class="px-5 py-4"><a class="text-ops-green hover:underline" href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
-          <td class="px-5 py-4">{{ incident.status }}</td>
-          <td class="px-5 py-4 text-ops-muted">{{ incident.started_at }}</td>
-          <td class="px-5 py-4 text-ops-muted">{{ incident.resolved_at or "-" }}</td>
+        <tr>
+          <td><a class="link link-primary font-medium" href="/incidents/{{ incident.id }}">{{ incident.title }}</a></td>
+          <td>{{ incident_severity_badge(incident.severity) }}</td>
+          <td>{{ incident_status_badge(incident.status) }}</td>
+          <td class="text-base-content/55">{{ timestamp(incident.started_at) }}</td>
+          <td class="text-base-content/55">{{ format_duration(incident.started_at, incident.resolved_at) }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  <div class="md:hidden">
+    {% for incident in incidents %}
+    <a class="ops-mobile-row block" href="/incidents/{{ incident.id }}"><div class="flex items-start justify-between gap-3"><p class="font-medium">{{ incident.title }}</p>{{ incident_severity_badge(incident.severity) }}</div><div class="mt-3 flex items-center justify-between gap-2">{{ incident_status_badge(incident.status) }}<span class="text-xs text-base-content/45">{{ format_duration(incident.started_at, incident.resolved_at) }}</span></div></a>
+    {% endfor %}
+  </div>
   {% else %}
-  <p class="px-5 py-8 text-sm text-ops-muted">No incidents for this monitor.</p>
+    {{ empty_state("No incidents", "This monitor has not crossed its failure threshold.") }}
   {% endif %}
+</section>
+
+<details class="ops-panel mb-6 overflow-hidden" {% if form_open %}open{% endif %}>
+  <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 font-semibold sm:px-5">
+    <span><span class="block">Monitor settings</span><span class="mt-1 block text-xs font-normal text-base-content/45">Edit request expectations, schedule, and thresholds.</span></span>
+    <span class="btn btn-outline btn-sm pointer-events-none">Edit</span>
+  </summary>
+  <form class="grid gap-5 border-t border-base-300 p-4 sm:p-5" action="/monitors/{{ monitor.id }}" method="post">
+    {{ csrf_input(csrf_token) }}
+    {% if form_errors %}<div class="alert border border-error/35 bg-error/10 text-error" role="alert"><span>Fix the highlighted fields and submit the form again.</span></div>{% endif %}
+    <div class="grid gap-4 md:grid-cols-2">
+      <label class="form-control"><span class="label pb-2"><span class="label-text font-medium">Name</span></span><input class="input input-bordered w-full {% if form_errors.name %}input-error{% endif %}" name="name" value="{{ form_values.name }}" maxlength="120" required>{% if form_errors.name %}<span class="ops-field-error">{{ form_errors.name }}</span>{% endif %}</label>
+      <label class="form-control"><span class="label pb-2"><span class="label-text font-medium">URL</span></span><input class="input input-bordered w-full {% if form_errors.url %}input-error{% endif %}" name="url" type="url" value="{{ form_values.url }}" maxlength="2048" required>{% if form_errors.url %}<span class="ops-field-error">{{ form_errors.url }}</span>{% endif %}</label>
+      <label class="form-control"><span class="label pb-2"><span class="label-text font-medium">Method</span></span><select class="select select-bordered w-full" name="method">{% for value in ["GET", "HEAD"] %}<option value="{{ value }}" {% if form_values.method == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+      <label class="form-control"><span class="label pb-2"><span class="label-text font-medium">Expected HTTP status</span></span><input class="input input-bordered w-full {% if form_errors.expected_status %}input-error{% endif %}" name="expected_status" type="number" min="100" max="599" value="{{ form_values.expected_status }}" required>{% if form_errors.expected_status %}<span class="ops-field-error">{{ form_errors.expected_status }}</span>{% endif %}</label>
+      <label class="form-control md:col-span-2"><span class="label pb-2"><span class="label-text font-medium">Expected response text <span class="font-normal text-base-content/45">(optional)</span></span></span><input class="input input-bordered w-full" name="expected_body" value="{{ form_values.expected_body }}"></label>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <label class="form-control"><span class="label pb-2"><span class="label-text">Interval (seconds)</span></span><input class="input input-bordered w-full {% if form_errors.interval_seconds %}input-error{% endif %}" name="interval_seconds" type="number" min="5" max="86400" value="{{ form_values.interval_seconds }}" required>{% if form_errors.interval_seconds %}<span class="ops-field-error">{{ form_errors.interval_seconds }}</span>{% endif %}</label>
+      <label class="form-control"><span class="label pb-2"><span class="label-text">Timeout (seconds)</span></span><input class="input input-bordered w-full {% if form_errors.timeout_seconds %}input-error{% endif %}" name="timeout_seconds" type="number" min="1" max="120" value="{{ form_values.timeout_seconds }}" required>{% if form_errors.timeout_seconds %}<span class="ops-field-error">{{ form_errors.timeout_seconds }}</span>{% endif %}</label>
+      <label class="form-control"><span class="label pb-2"><span class="label-text">Failures before down</span></span><input class="input input-bordered w-full {% if form_errors.failure_threshold %}input-error{% endif %}" name="failure_threshold" type="number" min="1" max="20" value="{{ form_values.failure_threshold }}" required>{% if form_errors.failure_threshold %}<span class="ops-field-error">{{ form_errors.failure_threshold }}</span>{% endif %}</label>
+      <label class="form-control"><span class="label pb-2"><span class="label-text">Successes to recover</span></span><input class="input input-bordered w-full {% if form_errors.recovery_threshold %}input-error{% endif %}" name="recovery_threshold" type="number" min="1" max="20" value="{{ form_values.recovery_threshold }}" required>{% if form_errors.recovery_threshold %}<span class="ops-field-error">{{ form_errors.recovery_threshold }}</span>{% endif %}</label>
+    </div>
+    <label class="flex items-center gap-3"><input class="toggle toggle-primary" name="enabled" type="checkbox" value="true" {% if form_values.enabled %}checked{% endif %}><span class="text-sm font-medium">Scheduled checks enabled</span></label>
+    <div class="flex justify-end"><button class="btn btn-primary" data-submitting-label="Saving…" type="submit">Save settings</button></div>
+  </form>
+</details>
+
+<section class="rounded-box border border-error/30 bg-error/5 p-4 sm:p-5">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div><h2 class="font-semibold text-error">Danger zone</h2><p class="mt-1 text-sm text-base-content/55">Deleting this monitor also deletes its saved checks and incidents.</p></div>
+    <form action="/monitors/{{ monitor.id }}/delete" method="post" data-confirm="Delete '{{ monitor.name }}' and all of its saved history? This cannot be undone.">
+      {{ csrf_input(csrf_token) }}
+      <button class="btn btn-error btn-outline btn-sm" data-submitting-label="Deleting…" type="submit">Delete monitor</button>
+    </form>
+  </div>
 </section>
 {% endblock %}
